@@ -19,7 +19,7 @@ import type { Bottle } from '#shared/utils/bottles'
 import { idHash } from '#shared/utils/bottles'
 import { MAX_ISLES, SPAWN, coastNormal, islandsNear, worldSdf } from './world'
 import {
-  MAX_RINGS, MAX_RIPPLES, MAX_TRAIL, U, curved, haloMaterial, paperShader, propsMaterial, setBend,
+  MAX_RINGS, MAX_RIPPLES, MAX_TRAIL, U, beamMaterial, curved, haloMaterial, paperShader, propsMaterial, setBend,
   skyMaterial, skyU, terrainColors, terrainMaterial, waterColors, waterMaterial, waterU,
 } from './materials'
 import { Builder, decorate, mat4 } from './props'
@@ -31,7 +31,7 @@ import type { SeaSynth } from './synth'
 // ───────── tuning ─────────
 const CAM_YAW = 0.6
 const CAM_PITCH = 0.92
-const ZOOM = { min: 15, max: 58, start: 30 }
+const ZOOM = { min: 15, max: 70, start: 66 }
 const MAX_SPEED = 7.5
 const BOOST = 1.5
 const TURN = 1.7
@@ -41,6 +41,7 @@ const HOLD_SCALE = 0.62
 const GRID = { n: 240, inner: 30, extent: 130 }
 const SNAP = GRID.inner / (GRID.n / 4)
 const WIND = new THREE.Vector2(0.8, -0.6).normalize()
+const BEAM_LEN = 20
 
 // ───────── palette ─────────
 const DAY = {
@@ -126,8 +127,11 @@ export interface SeaOptions {
   synth: SeaSynth
   reducedMotion: boolean
   events: SeaEvents
-  /** off-screen pointer to the nearest unread bottle */
-  hud: { pointer: HTMLElement, label: HTMLElement }
+  /**
+   * The way to the nearest unread bottle: an arrow at the screen edge while
+   * it's out of sight, and a compass (always) with the distance.
+   */
+  hud: { pointer: HTMLElement, label: HTMLElement, compass: HTMLElement, compassLabel: HTMLElement }
 }
 
 /** a grid in xz: even 0.5 m spacing in the middle, stretching out towards the edges */
@@ -188,7 +192,7 @@ export class SeaEngine {
   private propsMat: THREE.MeshLambertMaterial
   private glowMat: THREE.MeshBasicMaterial
   private haloMat: THREE.ShaderMaterial
-  private beamMat: THREE.MeshBasicMaterial
+  private beamMat: THREE.ShaderMaterial
   private decor = new Map<string, { group: THREE.Group, beams: THREE.Object3D[] }>()
   private streamKey = ''
   private boatModel: BoatModel
@@ -240,6 +244,8 @@ export class SeaEngine {
   private frameTimes: number[] = []
   private timers = { relocate: 0, chime: 6, gull: 9, more: 0 }
   phase: 'idle' | 'busy' | 'holding' = 'idle'
+  /** show the way to the nearest new bottle */
+  guide = true
 
   constructor(private canvas: HTMLCanvasElement, private opts: SeaOptions) {
     const mobile = matchMedia('(pointer: coarse)').matches
@@ -289,10 +295,7 @@ export class SeaEngine {
     this.propsMat = propsMaterial()
     this.glowMat = curved(new THREE.MeshBasicMaterial({ vertexColors: true }), { key: 'glow' })
     this.haloMat = haloMaterial()
-    this.beamMat = curved(new THREE.MeshBasicMaterial({
-      color: '#fff1b0', transparent: true, opacity: 0, depthWrite: false,
-      blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-    }), { key: 'beam' })
+    this.beamMat = beamMaterial(BEAM_LEN)
 
     this.boatModel = createBoat(this.propsMat, this.glowMat)
     this.boatModel.tilt.add(this.halo([{ p: this.boatModel.lantern, c: '#ffc46b', s: 2.4 }]))
@@ -615,16 +618,21 @@ export class SeaEngine {
     return pts
   }
 
-  /** two long soft cones sweeping round from a lighthouse lamp */
+  /**
+   * Two soft cones sweeping round from a lighthouse lamp, angled down so
+   * their far ends meet the sea — where the water draws a pool of light.
+   */
   private beam(parent: THREE.Object3D, at: THREE.Vector3) {
     const pivot = new THREE.Group()
     pivot.position.copy(at)
-    const geo = new THREE.ConeGeometry(1.6, 22, 24, 1, true)
-    geo.translate(0, -11, 0)
+    const tilt = Math.atan2(at.y, BEAM_LEN)
+    pivot.userData.reach = BEAM_LEN * Math.cos(tilt)
+    const geo = new THREE.ConeGeometry(2.6, BEAM_LEN, 32, 1, true)
+    geo.translate(0, -BEAM_LEN / 2, 0)
     geo.rotateZ(Math.PI / 2)
     for (const a of [0, Math.PI]) {
       const m = new THREE.Mesh(a ? geo.clone() : geo, this.beamMat)
-      m.rotation.y = a
+      m.rotation.set(0, a, -tilt)
       m.renderOrder = 6
       pivot.add(m)
     }
@@ -1136,6 +1144,9 @@ export class SeaEngine {
       this.camera.position.y += (Math.random() - 0.5) * s
     }
     this.camera.lookAt(this.camTarget)
+    // fog starts beyond the boat however far out the camera is
+    this.fog.near = U.uFogNear.value = this.zoom + 28
+    this.fog.far = U.uFogFar.value = this.zoom + 100
     U.uCurveCenter.value.set(this.camTarget.x, this.camTarget.z)
     this.sky.position.copy(this.camera.position)
     const sx = Math.round(this.camTarget.x / SNAP) * SNAP
@@ -1200,7 +1211,9 @@ export class SeaEngine {
       // gone when it would block the boat, or drifts right up to the camera
       const block = along > 0 && along < this.zoom + 4 ? 1 - clamp((off - 6) / 7, 0, 1) : 0
       const close = 1 - clamp((toC.length() - 14) / 8, 0, 1)
-      c.mat.opacity += (1 - Math.max(block, close) - c.mat.opacity) * (1 - Math.exp(-dt * 5))
+      // and they melt away at night, leaving the stars
+      const want = (1 - Math.max(block, close)) * (1 - this.night)
+      c.mat.opacity += (want - c.mat.opacity) * (1 - Math.exp(-dt * 5))
       c.mat.depthWrite = c.mat.opacity > 0.98
       c.mesh.visible = c.mat.opacity > 0.02
     }
@@ -1419,7 +1432,7 @@ export class SeaEngine {
     // lanterns, windows and the lighthouse come on
     this.glowMat.color.setRGB(lerp(0.9, 1.6, k), lerp(0.9, 1.45, k), lerp(0.88, 1.2, k))
     this.haloMat.uniforms.uOpacity!.value = k
-    this.beamMat.opacity = k * 0.2
+    this.beamMat.uniforms.uOpacity!.value = k * 0.55
     for (const cl of this.clouds) cl.mat.emissiveIntensity = lerp(DAY.cloudGlow, NIGHT.cloudGlow, k)
     const beacon = c(DAY.beacon, NIGHT.beacon)
     for (const f of this.bottles.values()) {
@@ -1438,7 +1451,7 @@ export class SeaEngine {
   }
 
   private stepPointer() {
-    const { pointer, label } = this.opts.hud
+    const { pointer, label, compass, compassLabel } = this.opts.hud
     let best: Floating | null = null
     let bestD = Infinity
     for (const f of this.bottles.values()) {
@@ -1449,11 +1462,18 @@ export class SeaEngine {
         bestD = d
       }
     }
-    if (!best || this.phase === 'busy') {
+    compass.dataset.state = !best ? 'none' : this.guide && this.phase !== 'busy' ? 'on' : 'off'
+    if (!best || this.phase === 'busy' || !this.guide) {
       pointer.style.opacity = '0'
       return
     }
     const p = this.bent(new THREE.Vector3(best.x, best.y + 1, best.z)).project(this.camera)
+    // the compass: from the boat to the bottle, as seen on screen
+    const o = this.bent(new THREE.Vector3(this.boat.x, this.boat.y, this.boat.z)).project(this.camera)
+    const sgn = p.z > 1 ? -1 : 1
+    const ca = Math.atan2(-(p.y * sgn - o.y) * this.canvas.clientHeight, (p.x * sgn - o.x) * this.canvas.clientWidth)
+    compass.style.setProperty('--angle', `${ca}rad`)
+    compassLabel.textContent = `${Math.round(bestD)} m`
     const behind = p.z > 1
     let x = behind ? -p.x : p.x
     let y = behind ? -p.y : p.y
@@ -1559,7 +1579,16 @@ export class SeaEngine {
     this.stepFish(dt)
     this.stepDrops(dt)
     if (this.held) this.stepHeld()
-    for (const d of this.decor.values()) for (const b of d.beams) b.rotation.y += dt * 0.8
+    // beams sweep round; the nearest few light up the water where they land
+    const pools = waterU.uBeams.value
+    let pi = 0
+    for (const d of this.decor.values()) {
+      for (const b of d.beams) {
+        b.rotation.y += dt * 0.8
+        if (pi < pools.length) pools[pi++]!.set(b.position.x, b.position.z, b.rotation.y, b.userData.reach as number)
+      }
+    }
+    for (; pi < pools.length; pi++) pools[pi]!.w = 0
     this.stepPointer()
 
     // a gull now and then, chimes on the breeze

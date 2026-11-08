@@ -412,7 +412,7 @@ export function lighthouse(b: Builder, L: Lights, x: number, y: number, z: numbe
  * transom at the stern, a gunwale rim, a lighter inside and two seats.
  * Comes with its own vertex colours: planks, a painted band, the rim.
  */
-export function hullGeometry(L = 3.2, W = 1.3, D = 0.75) {
+export function hullGeometry(L = 3.2, W = 1.3, D = 0.75, floorY = D * 0.22) {
   const S = 14
   const K = 8
   const IN = 0.07
@@ -470,6 +470,29 @@ export function hullGeometry(L = 3.2, W = 1.3, D = 0.75) {
     const e = new THREE.Vector3(-hw, y, s.z + 0.14)
     quad(a, e, d, b, '#c48a52')
     quad(a, b, d, e, '#c48a52')
+  }
+  // a plank floor above the waterline, so the sea doesn't show inside
+  const floorHalf = (s: number) => {
+    const { w, g, bot } = st[s]!
+    for (let i = 0; i <= 40; i++) {
+      const th = Math.PI / 2 - (i / 40) * (Math.PI / 2)
+      const y = g - (g - bot) * Math.sin(th) ** 0.8 + IN * 0.6 * Math.sin(th)
+      if (y >= floorY) return Math.max(0, w - IN) * Math.cos(th)
+    }
+    return Math.max(0, w - IN)
+  }
+  for (let s = 0; s < S; s++) {
+    const h0 = floorHalf(s)
+    const h1 = floorHalf(s + 1)
+    const z0 = st[s]!.z
+    const z1 = st[s + 1]!.z
+    const a = new THREE.Vector3(-h0, floorY, z0)
+    const b = new THREE.Vector3(h0, floorY, z0)
+    const d = new THREE.Vector3(h1, floorY, z1)
+    const e = new THREE.Vector3(-h1, floorY, z1)
+    const c = s % 2 ? '#d9a66c' : '#c99558'
+    quad(a, e, d, b, c)
+    quad(a, b, d, e, c)
   }
   const g = new THREE.BufferGeometry()
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))

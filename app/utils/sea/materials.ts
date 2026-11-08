@@ -272,6 +272,9 @@ export const waterU = {
   uRingCount: { value: 0 },
   /** index of the newest trail point (the trail is a ring buffer) */
   uTrailHead: { value: 0 },
+  /** lighthouses: lamp x, z, beam angle, how far out the beam meets the sea */
+  uBeams: { value: Array.from({ length: 4 }, () => new THREE.Vector4()) },
+  uBeamColor: { value: new THREE.Color('#ffe7a6') },
   /** x, z, heading, speed 0..1 */
   uBoat: { value: new THREE.Vector4() },
   uWaveAmp: { value: 1 },
@@ -315,6 +318,8 @@ export function waterMaterial() {
       uniform vec3 uFoam; uniform vec3 uGlow; uniform vec3 uSkyRefl; uniform vec3 uSpec;
       uniform vec4 uTrail[${MAX_TRAIL}];
       uniform int uTrailHead;
+      uniform vec4 uBeams[4];
+      uniform vec3 uBeamColor;
       uniform vec4 uRipples[${MAX_RIPPLES}];
       uniform vec3 uRings[${MAX_RINGS}];
       uniform int uRingCount;
@@ -358,7 +363,19 @@ export function waterMaterial() {
         float hg = hash12(floor(g));
         float tw = 0.5 + 0.5 * sin(t * 3.0 + hg * 40.0);
         float spark = step(0.88, hg) * step(length(fract(g) - 0.5), 0.13 * tw);
-        col += uSpec * (pow(sd, 700.0) * 0.7 + spark * smoothstep(0.6, 0.97, sd) * 0.75);
+        col += uSpec * (pow(sd, 700.0) * 0.7 + spark * smoothstep(0.6, 0.97, sd) * 0.75) * (1.0 - uNight);
+
+        // night: the moon's path — a faint glow with a slow shimmer
+        if (uNight > 0.01) {
+          vec2 along = normalize(uSunDir.xz + vec2(1e-4));
+          vec2 across = vec2(-along.y, along.x);
+          // where a calm sea would mirror the moon: a column stretching away towards it
+          float column = pow(max(dot(reflect(-V, vec3(0.0, 1.0, 0.0)), uSunDir), 0.0), 50.0);
+          // soft, slow shimmer: smooth noise stretched across the path, no hard edges
+          vec2 mq = vec2(dot(p, across) * 0.35, dot(p, along) * 1.6);
+          float shimmer = vnoise(mq + vec2(t * 0.15, -t * 0.6)) * 0.6 + vnoise(mq * 2.3 - vec2(0.0, t * 0.9)) * 0.4;
+          col += uSpec * column * (0.08 + smoothstep(0.35, 0.95, shimmer) * 0.28) * uNight;
+        }
 
         // ── foam ──
         float foam = 0.0;
@@ -419,6 +436,22 @@ export function waterMaterial() {
         float hull = length(bl / vec2(0.95, 1.85)) - 1.0;
         float hullFoam = 1.0 - smoothstep(0.0, 0.1 + 0.18 * uBoat.w, abs(hull - 0.04 + wob * 0.25));
         foam = max(foam, hullFoam * (0.55 + 0.45 * uBoat.w));
+
+        // a soft oval of light where each lighthouse beam meets the sea
+        float lamp = 0.0;
+        for (int i = 0; i < 4; i++) {
+          vec4 bm = uBeams[i];
+          if (bm.w <= 0.0) continue;
+          vec2 dir = vec2(cos(bm.z), -sin(bm.z));
+          vec2 side = vec2(-dir.y, dir.x);
+          for (int k = 0; k < 2; k++) {
+            vec2 dv = p - (bm.xy + dir * bm.w * (k == 0 ? 1.0 : -1.0));
+            float a = dot(dv, dir) / 3.2;
+            float b = dot(dv, side) / 2.0;
+            lamp += exp(-(a * a + b * b));
+          }
+        }
+        col += uBeamColor * min(lamp, 1.0) * uNight * 0.45;
 
         foam = clamp(foam, 0.0, 1.0);
         col = mix(col, uFoam, foam);
@@ -579,6 +612,52 @@ export function beaconMaterial() {
         gl_FragColor = vec4(uColor * a, 1.0);
         float f = smoothstep(uFogNear, uFogFar, vFogDepth);
         gl_FragColor.rgb *= 1.0 - f;
+        #include <colorspace_fragment>
+      }
+    `,
+  })
+}
+
+/**
+ * A lighthouse beam: a cone of light with no hard edge. Brightest at the
+ * lamp, fading along its length, and fading towards its silhouette (where
+ * you look through less of it), so it reads as lit air, not a solid tube.
+ */
+export function beamMaterial(length: number) {
+  return new THREE.ShaderMaterial({
+    uniforms: { ...U, uColor: { value: new THREE.Color('#ffe7a6') }, uOpacity: { value: 0 }, uLen: { value: length }, uBendOn: { value: 1 } },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+    vertexShader: /* glsl */ `
+      ${BEND}
+      uniform float uLen;
+      varying float vAlong;
+      varying vec3 vN;
+      varying vec3 vView;
+      varying float vFogDepth;
+      void main() {
+        vAlong = clamp(position.x / uLen, 0.0, 1.0);
+        vec4 mv = viewMatrix * bendWorld(modelMatrix * vec4(position, 1.0));
+        vN = normalize(normalMatrix * normal);
+        vView = -mv.xyz;
+        vFogDepth = -mv.z;
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      ${FOG_DECL}
+      uniform vec3 uColor;
+      uniform float uOpacity;
+      varying float vAlong;
+      varying vec3 vN;
+      varying vec3 vView;
+      void main() {
+        float face = abs(dot(normalize(vN), normalize(vView)));
+        float a = pow(face, 2.2) * pow(1.0 - vAlong, 1.4) * smoothstep(0.0, 0.06, vAlong) * uOpacity;
+        a *= 1.0 - smoothstep(uFogNear, uFogFar, vFogDepth);
+        gl_FragColor = vec4(uColor * a, 1.0);
         #include <colorspace_fragment>
       }
     `,

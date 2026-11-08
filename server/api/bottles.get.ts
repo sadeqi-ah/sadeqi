@@ -1,5 +1,6 @@
 /**
- * A handful of random bottles to float on the sea, plus the total.
+ * A handful of random bottles to float on the sea, plus how many there are
+ * to find (not counting the visitor's own).
  * `?mine=id,id` adds the visitor's own bottles (ids kept in localStorage),
  * so the one you just threw is still out there after a reload — even when
  * it's pending moderation.
@@ -28,6 +29,6 @@ export default defineEventHandler(async (event): Promise<{ bottles: Bottle[], to
   setResponseHeader(event, 'cache-control', 'no-store')
   return {
     bottles: [...own, ...rest.slice(0, Math.max(0, SAMPLE - own.length))].map(toPublic),
-    total: published.length,
+    total: rest.length,
   }
 })

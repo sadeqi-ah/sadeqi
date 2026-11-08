@@ -21,6 +21,8 @@ type Mode = 'sea' | 'write' | 'sealing' | 'holding' | 'opening' | 'read' | 'clos
 const canvas = ref<HTMLCanvasElement>()
 const pointer = ref<HTMLElement>()
 const pointerLabel = ref<HTMLElement>()
+const compass = ref<HTMLElement>()
+const compassLabel = ref<HTMLElement>()
 const letterRef = ref<{ paper: HTMLElement, focus: () => void }>()
 
 const mode = ref<Mode>('sea')
@@ -40,6 +42,7 @@ const touch = ref(false)
 const sound = useLocalStorage('sea:sound', true)
 const mine = useLocalStorage<string[]>('sea:mine', [])
 const readIds = useLocalStorage<string[]>('sea:read', [])
+const guide = useLocalStorage('sea:guide', true)
 
 const blank = () => ({ message: '', name: '', melody: Array(MELODY_STEPS).fill(-1), website: '' })
 const draft = ref(blank())
@@ -51,7 +54,7 @@ let pendingThrow: Bottle | undefined
 const synth = new SeaSynth()
 let engine: SeaEngine | undefined
 
-const found = computed(() => readIds.value.length)
+const found = computed(() => Math.min(readIds.value.length, total.value || Infinity))
 const letterMode = computed(() => (mode.value === 'write' || mode.value === 'sealing' ? 'write' : 'read'))
 const letterShown = computed(() => ['write', 'read'].includes(mode.value) || (flat.value && mode.value === 'sealing'))
 const letterMounted = computed(() => ['write', 'sealing', 'opening', 'read', 'closing'].includes(mode.value))
@@ -208,6 +211,11 @@ function toggleSound() {
   else synth.stopSea()
 }
 
+function toggleGuide() {
+  guide.value = !guide.value
+  if (engine) engine.guide = guide.value
+}
+
 function toggleNight() {
   night.value = !night.value
   engine?.setNight(night.value)
@@ -241,7 +249,7 @@ onMounted(async () => {
   engine = new SeaEngine(canvas.value, {
     synth,
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-    hud: { pointer: pointer.value!, label: pointerLabel.value! },
+    hud: { pointer: pointer.value!, label: pointerLabel.value!, compass: compass.value!, compassLabel: compassLabel.value! },
     events: {
       ready: () => { ready.value = true },
       near: (id) => { nearId.value = id },
@@ -252,6 +260,7 @@ onMounted(async () => {
     },
   })
   engine.setNight(night.value, true)
+  engine.guide = guide.value
   engine.setBottles(bottles.value, seen())
 })
 
@@ -283,6 +292,13 @@ const hint = computed(() => touch.value
       </div>
     </div>
 
+    <!-- always: which way, and how far, to the nearest bottle you haven't read -->
+    <div ref="compass" class="compass chip" data-state="off" aria-hidden="true">
+      <span class="needle"><svg viewBox="0 0 20 20" width="18" height="18"><path d="M3 10h11M10 5.5 14.5 10 10 14.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></span>
+      <span ref="compassLabel" class="mono" />
+      <span class="what">new bottle</span>
+    </div>
+
     <header class="top">
       <NuxtLink to="/" class="chip back" aria-label="Back to the site">
         <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
@@ -294,6 +310,9 @@ const hint = computed(() => touch.value
           <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M8 2.5h4M8.7 2.5v3.2c0 .4-.2.7-.5 1L6.6 8.1A3.4 3.4 0 0 0 5.5 10.6v4.9A2 2 0 0 0 7.5 17.5h5a2 2 0 0 0 2-2v-4.9c0-1-.4-1.9-1.1-2.5l-1.6-1.4c-.3-.3-.5-.6-.5-1V2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M7.5 11.5h5M7.5 14h3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" /></svg>
           <span class="mono">{{ found }}<template v-if="total"> / {{ total }}</template></span>
         </span>
+        <button type="button" class="icon" :class="{ off: !guide }" :aria-pressed="guide" :aria-label="guide ? 'Hide the way to new bottles' : 'Show the way to new bottles'" :title="guide ? 'Hide the compass' : 'Show the compass'" @click="toggleGuide">
+          <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M12.8 7.2 11 11l-3.8 1.8L9 9z" fill="currentColor" /></svg>
+        </button>
         <button type="button" class="icon" :aria-pressed="sound" :aria-label="sound ? 'Mute' : 'Unmute'" @click="toggleSound">
           <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true">
             <path d="M3 8h3l4-3v10l-4-3H3z" fill="currentColor" />
@@ -476,6 +495,23 @@ const hint = computed(() => touch.value
 }
 .icon:hover { background: rgba(127, 160, 190, 0.18); }
 .icon:active { transform: scale(0.9); }
+.icon.off { opacity: 0.45; }
+
+.compass {
+  position: absolute;
+  top: calc(max(16px, env(safe-area-inset-top)) + 52px);
+  left: max(16px, env(safe-area-inset-left));
+  height: 36px;
+  padding: 0 12px 0 8px;
+  gap: 6px;
+  font-size: 13px;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.compass[data-state='off'], .compass[data-state='none'] { opacity: 0; }
+.needle { display: grid; place-items: center; width: 22px; height: 22px; color: #e8912c; transform: rotate(var(--angle, 0rad)); }
+.night .needle { color: #ffc46b; }
+.what { opacity: 0.7; font-size: 12px; }
 
 .bottom {
   position: absolute;
