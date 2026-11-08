@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useElementSize } from '@vueuse/core'
-
 const route = useRoute()
 const palette = usePalette()
 
@@ -12,18 +10,12 @@ const links = [
   { to: '/resume', label: 'resume' },
 ]
 
-const wrap = ref<HTMLElement>()
 const nav = ref<HTMLElement>()
-const { width: wrapWidth } = useElementSize(wrap)
-const { width: navWidth } = useElementSize(nav, undefined, { box: 'border-box' })
 
-const isHome = computed(() => route.path === '/')
 const activeTo = computed(() => links.find(l => l.to === '/' ? route.path === '/' : route.path.startsWith(l.to))?.to ?? null)
 const hovered = ref<string | null>(null)
 const target = computed(() => hovered.value ?? activeTo.value)
 
-// Home: nav sits left-aligned. Inner pages: centered. A spring glides between them.
-const offset = useSpring(0, { stiffness: 140, damping: 22 })
 const left = useSpring(0)
 const right = useSpring(0)
 const visible = ref(false)
@@ -57,17 +49,10 @@ function moveBlob() {
   right.set(rect.r, goingRight ? lead : trail)
 }
 
-function moveNav(immediate = false) {
-  const x = isHome.value ? 0 : Math.max(0, (wrapWidth.value - navWidth.value) / 2)
-  offset.set(x, { immediate })
-}
-
 watch(target, () => nextTick(moveBlob))
-watch([isHome, wrapWidth, navWidth], () => moveNav(!mounted || !wrapWidth.value))
 
 onMounted(async () => {
   await nextTick()
-  moveNav(true)
   moveBlob()
   mounted = true
 })
@@ -80,12 +65,11 @@ const blobStyle = computed(() => ({
 </script>
 
 <template>
-  <div ref="wrap" class="nav-wrap no-print">
+  <div class="nav-wrap no-print">
     <nav
       ref="nav"
       class="nav"
       aria-label="Main"
-      :style="{ transform: `translateX(${offset.value.value}px)` }"
       @mouseleave="hovered = null"
     >
       <span class="blob" :style="blobStyle" aria-hidden="true" />
@@ -115,6 +99,7 @@ const blobStyle = computed(() => ({
   height: 40px;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 .nav {
   position: relative;
@@ -145,8 +130,7 @@ const blobStyle = computed(() => ({
   position: relative;
   padding: 5px 10px;
   border-radius: 999px;
-  font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   line-height: normal;
   color: var(--muted);
   transition: color 0.2s var(--ease-out);
@@ -167,6 +151,6 @@ const blobStyle = computed(() => ({
 
 @media (max-width: 420px) {
   .kbd { display: none; }
-  .link { padding: 5px 8px; font-size: 12.5px; }
+  .link { padding: 5px 8px; font-size: 13px; }
 }
 </style>

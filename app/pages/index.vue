@@ -25,6 +25,8 @@ const resumeTo = '/resume'
 
 // Tracks come straight from the Spotify playlist linked in media.yml.
 const { data: playlist } = await useFetch('/api/playlist')
+// Favourite films & series, with posters looked up server-side.
+const { data: favourites } = await useFetch('/api/favourites')
 const playing = ref<PlaylistTrack | null>(null)
 </script>
 
@@ -44,13 +46,14 @@ const playing = ref<PlaylistTrack | null>(null)
             <LocalClock v-if="site" :timezone="site.timezone" />
           </p>
         </div>
-        <HeroPortrait src="/amir-sm.webp" :alt="site?.name ?? 'Portrait'" :delay="250" />
+        <HeroPortrait src="/amir-sm.webp" :alt="site?.name ?? 'Portrait'" :delay="120" />
       </div>
 
       <ContentRenderer v-if="data?.intro" :value="data.intro" class="intro" style="--i: 1" />
 
-      <div class="sign-off" style="--i: 2">
-        <SiteSignature size="hero" trigger="load" :delay="900" />
+      <!-- not part of the stagger: the loader flies the signature in here -->
+      <div class="sign-off">
+        <SiteSignature size="hero" trigger="loader" />
       </div>
 
       <div class="actions" style="--i: 3">
@@ -63,16 +66,18 @@ const playing = ref<PlaylistTrack | null>(null)
     <!-- Now -->
     <section v-if="data?.now" class="section">
       <SectionLabel label="Now" :action="`updated ${data.now.updated}`" />
-      <NowCard :items="data.now.items" />
+      <LazyNowCard hydrate-on-visible :items="data.now.items" />
     </section>
 
     <!-- Projects -->
     <section class="section">
       <SectionLabel label="Projects" action="View all →" to="/projects" />
       <div v-reveal class="list">
-        <ListRow
+        <LazyListRow
+          hydrate-on-visible
           v-for="p in data?.projects"
           :key="p.title"
+          :icon="p.logo ?? true"
           :title="p.title"
           :description="p.short"
           :meta="p.year"
@@ -85,7 +90,8 @@ const playing = ref<PlaylistTrack | null>(null)
     <section class="section">
       <SectionLabel label="Research" action="View all →" to="/research" />
       <div v-reveal class="list">
-        <ResearchItem
+        <LazyResearchItem
+          hydrate-on-visible
           v-for="paper in data?.papers"
           :key="paper.title"
           :status="paper.status"
@@ -101,7 +107,8 @@ const playing = ref<PlaylistTrack | null>(null)
     <section class="section">
       <SectionLabel label="Writing" action="View all →" to="/writing" />
       <div v-reveal class="list">
-        <ListRow
+        <LazyListRow
+          hydrate-on-visible
           v-for="post in data?.posts"
           :key="post.path"
           :title="post.title"
@@ -111,33 +118,25 @@ const playing = ref<PlaylistTrack | null>(null)
       </div>
     </section>
 
-    <!-- Listening -->
+    <!-- Favourite music (the Spotify playlist) -->
     <section v-if="playlist?.tracks.length" class="section">
-      <SectionLabel v-if="playing" label="Listening" :action="playing.title">
+      <SectionLabel v-if="playing" label="Favourite music" :action="playing.title">
         <template #action>
           <span class="eq" aria-hidden="true"><i /><i /><i /></span>
           <span class="playing">{{ playing.title }} · {{ playing.artist }}</span>
         </template>
       </SectionLabel>
-      <SectionLabel v-else label="Listening" :action="`${playlist.name} ↗`" :to="playlist.url" />
-      <TrackList v-model:current="playing" :tracks="playlist.tracks" />
+      <SectionLabel v-else label="Favourite music" action="Open in Spotify ↗" :to="playlist.url" />
+      <LazyTrackList v-model:current="playing" hydrate-on-visible :tracks="playlist.tracks" />
     </section>
 
-    <!-- Watching -->
-    <section v-if="data?.media" class="section">
-      <SectionLabel label="Watching" action="letterboxd ↗" :to="data.media.letterboxd" />
-      <div v-reveal class="list">
-        <ListRow
-          v-for="(item, i) in data.media.watching"
-          :key="i"
-          :title="item.title"
-          :description="item.kind"
-          :meta="item.rating"
-        />
-      </div>
+    <!-- Favourite films & series -->
+    <section v-if="favourites?.length" class="section">
+      <SectionLabel label="Favourite films & series" action="Letterboxd ↗" :to="data?.media?.letterboxd" />
+      <LazyFavouriteGrid hydrate-on-visible :items="favourites" />
     </section>
 
-    <SiteFooter />
+    <LazySiteFooter hydrate-on-visible />
   </main>
 </template>
 
@@ -177,6 +176,7 @@ const playing = ref<PlaylistTrack | null>(null)
 .intro :deep(p:first-child) { color: var(--muted); }
 
 .sign-off { display: flex; }
+.stagger > .sign-off { animation: none; }
 .actions { display: flex; align-items: center; gap: 8px; }
 .spacer { flex: 1 0 0; }
 

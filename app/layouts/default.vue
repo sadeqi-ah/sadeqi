@@ -2,7 +2,8 @@
   <div class="shell">
     <SiteNav />
     <slot />
-    <CommandPalette />
+    <!-- not needed for first paint: hydrate once the browser is idle -->
+    <LazyCommandPalette hydrate-on-idle />
   </div>
 </template>
 

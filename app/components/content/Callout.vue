@@ -15,7 +15,7 @@
   transform-origin: top;
   transition: transform 0.8s var(--ease-out) 0.2s;
 }
-.is-revealed .bar { transform: none; }
+[data-revealed] .bar { transform: none; }
 .text {
   flex: 1;
   font-family: var(--font-serif);

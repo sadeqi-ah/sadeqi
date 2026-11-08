@@ -41,7 +41,7 @@ defineProps<{ label: string, action?: string, to?: string }>()
   transform-origin: left;
   transition: transform 1.1s var(--ease-out) 0.15s;
 }
-.is-revealed .rule img { transform: scaleX(1); }
+[data-revealed] .rule img { transform: scaleX(1); }
 .action {
   font-family: var(--font-mono);
   font-size: 12px;

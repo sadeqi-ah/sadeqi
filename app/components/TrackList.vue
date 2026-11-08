@@ -18,9 +18,27 @@ function tick() {
   raf = requestAnimationFrame(tick)
 }
 
+/**
+ * The spinning reel would snap back to 0° when its track stops. Instead, take
+ * its current angle and ease it on to the next full turn (WAAPI, transform
+ * only), while the CSS rounds it back into a square.
+ */
+function windDown(id: string) {
+  const disc = document.querySelector<HTMLElement>(`[data-disc="${id}"]`)
+  if (!disc) return
+  const m = new DOMMatrixReadOnly(getComputedStyle(disc).transform)
+  const deg = (Math.atan2(m.b, m.a) * 180 / Math.PI + 360) % 360
+  if (deg < 1) return
+  disc.animate(
+    [{ transform: `rotate(${deg}deg)` }, { transform: 'rotate(360deg)' }],
+    { duration: 300 + (360 - deg) * 2, easing: 'cubic-bezier(0.2, 0.6, 0.3, 1)' },
+  )
+}
+
 function stop() {
   audio.value?.pause()
   cancelAnimationFrame(raf)
+  if (current.value) windDown(current.value.id)
   current.value = null
   progress.value = 0
 }
@@ -60,8 +78,7 @@ const time = (ms: number) => {
 
 <template>
   <div class="tracks">
-    <!-- v-reveal lives on the list, not the rows: the rows bind :class, and
-         Vue's class patch would wipe the is-revealed class the directive adds -->
+    <!-- v-reveal lives on the list, not the rows: one reveal for the whole list -->
     <ol v-reveal class="list">
       <li
         v-for="(t, i) in shown"
@@ -84,7 +101,9 @@ const time = (ms: number) => {
           </span>
         </span>
         <span class="cover">
-          <img v-if="t.cover" :src="t.cover" alt="" width="36" height="36" loading="lazy">
+          <span class="disc" :data-disc="t.id">
+            <img v-if="t.cover" :src="t.cover" alt="" width="36" height="36" loading="lazy">
+          </span>
         </span>
         <span class="text">
           <span class="title">{{ t.title }}</span>
@@ -140,18 +159,58 @@ const time = (ms: number) => {
 .track:hover .n, .track.playing .n { opacity: 0; transform: scale(0.6); }
 .track:hover .glyph, .track.playing .glyph { opacity: 1; transform: none; }
 
+/* Cover → cassette reel while playing: the square rounds into a disc, a hole
+   opens in the middle, and it spins. On stop the spin eases out to a full
+   turn (see windDown) and it squares back up. */
+@property --hole {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: true;
+}
 .cover {
+  --hole: 0px;
+  position: relative;
   width: 36px;
   height: 36px;
+  transition: --hole 0.35s var(--ease-out);
+}
+.disc {
+  display: block;
+  width: 100%;
+  height: 100%;
   border-radius: 4px;
   overflow: hidden;
   background: var(--surface);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  -webkit-mask: radial-gradient(circle, transparent var(--hole), #000 calc(var(--hole) + 0.5px));
+  mask: radial-gradient(circle, transparent var(--hole), #000 calc(var(--hole) + 0.5px));
+  transition: border-radius 0.4s var(--ease-out);
 }
-.cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s var(--ease-out); }
-.track:hover .cover img { transform: scale(1.06); }
-.track.playing .cover { animation: spin-in 0.5s var(--ease-spring); }
-@keyframes spin-in { from { transform: rotate(-8deg) scale(0.9); } }
+.disc img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s var(--ease-out); }
+.track:hover:not(.playing) .disc img { transform: scale(1.06); }
+
+/* the spindle: a thin ring around the hole */
+.cover::after {
+  content: '';
+  position: absolute;
+  inset: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85), 0 0 0 2.5px rgba(0, 0, 0, 0.12);
+  translate: -50% -50%;
+  opacity: 0;
+  transition: width 0.35s var(--ease-out), height 0.35s var(--ease-out), opacity 0.25s;
+  pointer-events: none;
+}
+
+.track.playing .cover { --hole: 4.5px; }
+.track.playing .cover::after { width: 9px; height: 9px; opacity: 1; }
+.track.playing .disc {
+  border-radius: 50%;
+  animation: reel 2.6s linear 0.25s infinite;
+}
+@keyframes reel { to { transform: rotate(1turn); } }
 
 .text { min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.3; }
 .title, .artist { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -218,5 +277,6 @@ const time = (ms: number) => {
 }
 @media (prefers-reduced-motion: reduce) {
   .eq i { animation: none; }
+  .track.playing .disc { animation: none; }
 }
 </style>

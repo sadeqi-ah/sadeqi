@@ -20,7 +20,8 @@ const parts = computed(() => {
     ·
     <Transition name="fade" mode="out-in">
       <span v-if="mounted" :key="`${parts.h}${parts.m}`" class="time"><time>{{ parts.h }}<span class="colon">:</span>{{ parts.m }}</time></span>
-      <span v-else class="time">--:--</span>
+      <!-- invisible same-width ghost: no "--:--" flash, no layout jump -->
+      <span v-else class="time ghost" aria-hidden="true">00:00</span>
     </Transition>
     local
   </span>
@@ -39,6 +40,9 @@ const parts = computed(() => {
 }
 .colon { animation: blink 2s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0.25; } }
+.ghost { opacity: 0; }
+/* the ghost leaves instantly, so the first time fades straight in */
+.ghost.fade-leave-active { transition: none; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s, transform 0.3s var(--ease-out); }
 .fade-enter-from { opacity: 0; transform: translateY(3px); }
 .fade-leave-to { opacity: 0; transform: translateY(-3px); }

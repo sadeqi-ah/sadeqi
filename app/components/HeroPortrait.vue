@@ -1,11 +1,13 @@
 <script setup lang="ts">
 /**
- * The portrait on the home page. It develops like an instant-film print —
- * pale and washed-out, warming into full colour — then tilts toward the
+ * The portrait on the home page. It comes into focus like a lens pulling
+ * focus — soft and slightly zoomed, settling sharp — then tilts toward the
  * pointer with a soft glare, like a print held up to the light.
  *
- * The develop is pure CSS, so it starts with the HTML on the same clock as
- * the hero stagger and never waits for hydration.
+ * The focus pull animates only opacity and transform, so it runs entirely on
+ * the compositor: a pre-blurred copy (static blur, painted once) fades out
+ * over the sharp photo while the image settles from a slight zoom. Held by
+ * the load gate (main.css) like the rest of the hero.
  */
 withDefaults(defineProps<{ src: string, alt: string, delay?: number }>(), { delay: 0 })
 
@@ -31,7 +33,10 @@ function onLeave() {
 <template>
   <div class="stage" @pointermove="onMove" @pointerleave="onLeave">
     <figure ref="root" class="portrait" :style="{ '--delay': `${delay}ms` }">
-      <img :src="src" :alt="alt" width="312" height="426" fetchpriority="high">
+      <div class="lens">
+        <img class="photo" :src="src" :alt="alt" width="312" height="426" fetchpriority="high">
+        <img class="soft" :src="src" alt="" aria-hidden="true" width="312" height="426">
+      </div>
       <span class="glare" aria-hidden="true" />
     </figure>
   </div>
@@ -48,8 +53,7 @@ function onLeave() {
   margin: 0;
   border-radius: 10px;
   overflow: hidden;
-  /* the blank print: warm, pale paper the image surfaces out of */
-  background: #ece6da;
+  background: var(--surface);
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.06),
     0 1px 2px rgba(0, 0, 0, 0.06),
@@ -66,28 +70,41 @@ function onLeave() {
     0 2px 4px rgba(0, 0, 0, 0.06),
     0 22px 40px -16px rgba(60, 40, 10, 0.55);
 }
-.portrait img {
+
+/* the lens: zoomed in a touch, settles to rest as focus lands */
+.lens {
+  position: absolute;
+  inset: 0;
+  animation: settle 1.4s cubic-bezier(0.22, 1, 0.36, 1) var(--delay) both;
+  will-change: transform;
+}
+@keyframes settle { from { transform: scale(1.08); } }
+
+.lens img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: 50% 35%;
+}
+.photo {
   filter: saturate(0.9) contrast(1.02);
-  /* ease-out: most of the image shows up fast, the last of the colour lingers */
-  /* `backwards`, not `both`: once done the animation lets go of `filter`,
-     so the hover saturate below still works */
-  animation: develop 2.2s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay) backwards;
   transition: filter 0.6s var(--ease-out);
 }
-/* Instant film: first a faint ghost, then contrast, then colour. */
-@keyframes develop {
-  0% { opacity: 0; filter: brightness(1.5) contrast(0.35) saturate(0) sepia(0.4); }
-  25% { opacity: 1; filter: brightness(1.3) contrast(0.55) saturate(0.2) sepia(0.35); }
-  60% { filter: brightness(1.08) contrast(0.85) saturate(0.6) sepia(0.15); }
-  100% { opacity: 1; filter: saturate(0.9) contrast(1.02); }
+.stage:hover .photo { filter: saturate(1.08) contrast(1.04); }
+
+/* Out of focus: a static blur (painted once), oversized so its soft edges
+   stay outside the frame. Only its opacity animates. */
+.soft {
+  filter: blur(9px) saturate(0.85) brightness(1.04);
+  transform: scale(1.12);
+  opacity: 0;
+  animation: unblur 1.1s cubic-bezier(0.33, 0, 0.2, 1) var(--delay) both;
+  will-change: opacity;
+  pointer-events: none;
 }
-.stage:hover .portrait img { filter: saturate(1.08) contrast(1.04); }
+@keyframes unblur { from { opacity: 1; } }
 
 .glare {
   position: absolute;
@@ -105,5 +122,6 @@ function onLeave() {
 }
 @media (prefers-reduced-motion: reduce) {
   .portrait, .stage:hover .portrait { transform: none; }
+  .soft { display: none; }
 }
 </style>

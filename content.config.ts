@@ -37,6 +37,8 @@ export default defineContentConfig({
         stack: z.array(z.string()),
         links: z.array(link).default([]),
         thumbnail: z.string().optional(),
+        /** square logo/app icon (e.g. /projects/tray-speed.svg); a monogram tile is shown without one */
+        logo: z.string().optional(),
         order: z.number().default(0),
       }),
     }),
@@ -85,11 +87,19 @@ export default defineContentConfig({
         letterboxd: z.string().optional(),
         /** Spotify playlist URL — its tracks are listed on the home page. */
         playlist: z.string().optional(),
-        watching: z.array(z.object({
+        /** Favourite films & series; posters are looked up by title (server/api/favourites). */
+        favourites: z.array(z.object({
           title: z.string(),
-          kind: z.string(),
-          rating: z.string(),
-        })),
+          kind: z.enum(['film', 'series']),
+          /** shown under the title, e.g. "2014" or "S1–S5" */
+          note: z.string().optional(),
+          /** helps pick the right film when titles repeat */
+          year: z.number().optional(),
+          rating: z.string().optional(),
+          url: z.string().optional(),
+          /** poster override, if the lookup picks the wrong one */
+          cover: z.string().optional(),
+        })).default([]),
       }),
     }),
 

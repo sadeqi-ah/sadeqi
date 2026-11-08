@@ -13,7 +13,7 @@ const root = ref<HTMLElement>()
 const canvas = ref<HTMLCanvasElement>()
 const active = ref(false)
 let raf = 0
-let timer: ReturnType<typeof setTimeout> | undefined
+let cancelStart: (() => void) | undefined
 
 // fraction of full resolution per step (coarse → fine)
 const STEPS = [0.1, 0.14, 0.2, 0.3, 0.45, 0.7]
@@ -55,6 +55,10 @@ function draw(scale: number) {
 function play() {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
   cancelAnimationFrame(raf)
+  // Paint the first step *before* hiding the real text, so there's never a
+  // frame where the word is transparent and the canvas still empty.
+  let step = 0
+  draw(STEPS[0]!)
   active.value = true
   const start = performance.now()
   const tick = (now: number) => {
@@ -64,18 +68,24 @@ function play() {
       active.value = false
       return
     }
-    draw(STEPS[Math.min(STEPS.length - 1, Math.floor(p * STEPS.length))]!)
+    // redraw only when the step changes, not on every (120Hz) frame
+    const next = Math.min(STEPS.length - 1, Math.floor(p * STEPS.length))
+    if (next !== step) {
+      step = next
+      draw(STEPS[step]!)
+    }
     raf = requestAnimationFrame(tick)
   }
   raf = requestAnimationFrame(tick)
 }
 
 onMounted(() => {
-  if (props.autoplayDelay >= 0) timer = setTimeout(play, props.autoplayDelay)
+  // autoplayDelay counts from the load gate, like the CSS hero delays
+  if (props.autoplayDelay >= 0) cancelStart = useSettledStart(play, props.autoplayDelay)
 })
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
-  clearTimeout(timer)
+  cancelStart?.()
 })
 </script>
 

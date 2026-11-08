@@ -77,8 +77,8 @@ defineProps<{ items: { title: string, meta: string, progress: number }[] }>()
   transition-delay: calc(var(--i) * 120ms + 200ms);
 }
 .pct::after { content: counter(num) '%'; }
-.is-revealed .fill { transform: scaleX(1); }
-.is-revealed .pct { --num: var(--target); }
+[data-revealed] .fill { transform: scaleX(1); }
+[data-revealed] .pct { --num: var(--target); }
 
 @media (max-width: 520px) {
   .meta { display: none; }

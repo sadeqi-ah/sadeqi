@@ -1,13 +1,22 @@
 letterboxd: https://letterboxd.com/username
 # Edit the playlist on Spotify to change what shows on the site.
 playlist: https://open.spotify.com/playlist/5learNOVof5yQtIV1AgT07
-watching:
-  - title: Film title
-    kind: Film · 2024
-    rating: 9/10
-  - title: Series title
-    kind: Series · S1–S3
-    rating: 8/10
-  - title: Film title
-    kind: Film · 1999
-    rating: 10/10
+
+# Favourite films & series. Posters are found by title automatically; add
+# `year:` if a film title is ambiguous, or `cover:` (an image URL) to override.
+# TODO: these four are examples — replace them with your own favourites.
+favourites:
+  - title: Interstellar
+    kind: film
+    note: "2014"
+    year: 2014
+  - title: Breaking Bad
+    kind: series
+    note: S1–S5
+  - title: Dark
+    kind: series
+    note: S1–S3
+  - title: The Godfather
+    kind: film
+    note: "1972"
+    year: 1972

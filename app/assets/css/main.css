@@ -69,27 +69,57 @@ p, h1, h2, h3, h4, ul, ol, figure, blockquote { margin: 0; }
 .page-leave-to { opacity: 0; transform: translateY(-6px); filter: blur(2px); }
 
 /* ───────── Reveal (v-reveal directive) ───────── */
+/* Revealed by the inline script in nuxt.config (before hydration) and by the
+   v-reveal plugin (after client-side navigation). opacity + transform only, so
+   it runs on the compositor; no blur. */
 [data-reveal] {
   opacity: 0;
-  transform: translateY(14px);
-  filter: blur(3px);
+  transform: translateY(10px);
   transition:
-    opacity 0.7s var(--ease-out),
-    transform 0.8s var(--ease-out),
-    filter 0.7s var(--ease-out);
+    opacity 0.6s var(--ease-out),
+    transform 0.7s var(--ease-out);
   transition-delay: calc(var(--reveal-delay, 0) * 1ms);
 }
-[data-reveal].is-revealed { opacity: 1; transform: none; filter: none; }
+[data-reveal][data-revealed] { opacity: 1; transform: none; }
+
+/* Load gate: until the app has hydrated (<html class="ready">, see
+   utils/appReady.ts) every animation is held on its first frame, so nothing
+   moves while hydration has the main thread. Then they all start together.
+   The loader (SiteLoader) is exempt: it plays during hydration, on the
+   compositor. Only with JS (`js` class); without it, CSS animates as usual. */
+html.js:not(.ready) *:not(.site-loader, .site-loader *),
+html.js:not(.ready) *:not(.site-loader *)::before,
+html.js:not(.ready) *:not(.site-loader *)::after {
+  animation-play-state: paused !important;
+}
+
+/* Loader (SiteLoader.vue). Global on purpose: these key off <html> classes,
+   which scoped component CSS can't express. Without JS nothing would ever
+   remove the loader, so it only exists for JS; the hero signature hides
+   while the loader's copy is flying into its place. */
+html:not(.js) .site-loader { display: none; }
+html.js .signature.trigger-loader:not([data-landed]) { visibility: hidden; }
+/* signatures are written by JS (SignatureInk); without it, show them written */
+html:not(.js) .ink-sig .pen { stroke-dashoffset: 0; }
+
+/* Pre-promote everything that animates in on load. Each animating element
+   needs its own compositor layer, and painting all of them in the one frame
+   the gate opens cost ~250ms. With will-change they're layered and painted
+   while the loader still covers the page; `ready` then only moves them. */
+.stagger > *,
+[data-reveal] {
+  will-change: transform, opacity;
+}
 
 /* Hero load-in stagger */
 .stagger > * {
-  animation: rise 0.8s var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 80ms + 60ms);
+  animation: rise 0.55s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 50ms);
 }
 @keyframes rise {
   /* opacity + transform only: both stay on the compositor, so the load-in
      stays smooth even while the main thread is busy hydrating */
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
 
@@ -101,7 +131,7 @@ p, h1, h2, h3, h4, ul, ol, figure, blockquote { margin: 0; }
     transition-delay: 0ms !important;
     scroll-behavior: auto !important;
   }
-  [data-reveal] { opacity: 1; transform: none; filter: none; }
+  [data-reveal] { opacity: 1; transform: none; }
 }
 
 /* ───────── Print (resume) ───────── */
@@ -109,6 +139,6 @@ p, h1, h2, h3, h4, ul, ol, figure, blockquote { margin: 0; }
   @page { margin: 16mm; }
   html { background: #fff; font-size: 13px; }
   .no-print { display: none !important; }
-  [data-reveal] { opacity: 1 !important; transform: none !important; filter: none !important; }
+  [data-reveal] { opacity: 1 !important; transform: none !important; }
   a { text-decoration: none; }
 }

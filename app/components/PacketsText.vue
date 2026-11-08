@@ -6,7 +6,7 @@ const props = withDefaults(defineProps<{ text: string, duration?: number, autopl
 
 const display = ref(props.text)
 let raf = 0
-let timer: ReturnType<typeof setTimeout> | undefined
+let cancelStart: (() => void) | undefined
 
 function play() {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
@@ -23,11 +23,12 @@ function play() {
 
 onMounted(() => {
   // Decode once after the hero has settled, so the effect is discoverable.
-  if (props.autoplayDelay >= 0) timer = setTimeout(play, props.autoplayDelay)
+  // autoplayDelay counts from the load gate, like the CSS hero delays
+  if (props.autoplayDelay >= 0) cancelStart = useSettledStart(play, props.autoplayDelay)
 })
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
-  clearTimeout(timer)
+  cancelStart?.()
 })
 </script>
 

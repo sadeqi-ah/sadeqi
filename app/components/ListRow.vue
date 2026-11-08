@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { NuxtLink } from '#components'
-defineProps<{
+const props = defineProps<{
   title: string
   description?: string
   meta?: string
   to?: string
+  /** leading icon: an image URL, or `true` for a monogram tile from the title */
+  icon?: string | boolean
 }>()
+
+const monogram = computed(() => props.title.split(/[\s-]+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase())
 </script>
 
 <template>
@@ -16,6 +20,10 @@ defineProps<{
     class="row"
     :class="{ link: !!to }"
   >
+    <span v-if="icon" class="icon" aria-hidden="true">
+      <img v-if="typeof icon === 'string'" :src="icon" alt="" width="28" height="28" loading="lazy">
+      <span v-else class="mono">{{ monogram }}</span>
+    </span>
     <span class="left">
       <span class="title">{{ title }}</span>
       <span v-if="description" class="desc">{{ description }}</span>
@@ -35,6 +43,29 @@ defineProps<{
   border-bottom: 1px solid var(--border);
   line-height: normal;
 }
+.icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px -4px 0; /* sits 12px from the title, not the row's 16px */
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.45s var(--ease-spring);
+}
+.icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mono {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: -0.3px;
+  color: var(--muted);
+}
+.row.link:hover .icon { transform: rotate(-6deg) scale(1.06); }
 .left {
   flex: 1 0 0;
   min-width: 0;

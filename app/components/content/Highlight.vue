@@ -13,8 +13,11 @@ withDefaults(defineProps<{ delay?: number }>(), { delay: 700 })
 <style scoped>
 .hl {
   color: var(--text);
-  padding: 0 2px;
-  border-radius: 2px;
+  /* padding gives the rounded ends room; the negative margin gives that room
+     back so the text around it (spaces, a trailing comma) doesn't shift */
+  padding: 1px 4px;
+  margin: 0 -3px;
+  border-radius: 6px;
   background-color: transparent;
   background-image: linear-gradient(var(--highlight), var(--highlight));
   background-repeat: no-repeat;
