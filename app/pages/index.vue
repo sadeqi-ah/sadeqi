@@ -28,6 +28,8 @@ const { data: playlist } = await useFetch('/api/playlist')
 // Favourite films & series, with posters looked up server-side.
 const { data: favourites } = await useFetch('/api/favourites')
 const playing = ref<PlaylistTrack | null>(null)
+const HOME_TRACKS = 6
+const HOME_FILMS = 4
 </script>
 
 <template>
@@ -118,22 +120,23 @@ const playing = ref<PlaylistTrack | null>(null)
       </div>
     </section>
 
-    <!-- Favourite music (the Spotify playlist) -->
+    <!-- Favourite music (the Spotify playlist): a few here, the rest on /music -->
     <section v-if="playlist?.tracks.length" class="section">
-      <SectionLabel v-if="playing" label="Favourite music" :action="playing.title">
-        <template #action>
-          <span class="eq" aria-hidden="true"><i /><i /><i /></span>
-          <span class="playing">{{ playing.title }} · {{ playing.artist }}</span>
-        </template>
-      </SectionLabel>
-      <SectionLabel v-else label="Favourite music" action="Open in Spotify ↗" :to="playlist.url" />
-      <LazyTrackList v-model:current="playing" hydrate-on-visible :tracks="playlist.tracks" />
+      <PlayingLabel label="Favourite music" :playing="playing" action="View all →" to="/music" />
+      <LazyTrackList
+        v-model:current="playing"
+        hydrate-on-visible
+        :tracks="playlist.tracks.slice(0, HOME_TRACKS)"
+        :initial="HOME_TRACKS"
+      />
+      <!-- the rows only play 30s previews; the full songs live on Spotify -->
+      <a :href="playlist.url" target="_blank" rel="noopener" class="out-link">Open in Spotify ↗</a>
     </section>
 
-    <!-- Favourite films & series -->
+    <!-- Favourite films & series: the first few here, the rest on /films -->
     <section v-if="favourites?.length" class="section">
-      <SectionLabel label="Favourite films & series" action="Letterboxd ↗" :to="data?.media?.letterboxd" />
-      <LazyFavouriteGrid hydrate-on-visible :items="favourites" />
+      <SectionLabel label="Favourite films & series" action="View all →" to="/films" />
+      <LazyFavouriteGrid hydrate-on-visible :items="favourites.slice(0, HOME_FILMS)" />
     </section>
 
     <LazySiteFooter hydrate-on-visible />
@@ -183,24 +186,18 @@ const playing = ref<PlaylistTrack | null>(null)
 .section { display: flex; flex-direction: column; gap: 12px; }
 .list { display: flex; flex-direction: column; }
 
-.playing { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
-
-.eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 9px; }
-.eq i {
-  width: 2px;
-  height: 100%;
-  background: var(--success);
-  border-radius: 1px;
-  transform-origin: bottom;
-  animation: eq 0.8s var(--ease-in-out) infinite alternate;
+.out-link {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  transition: color 0.2s;
 }
-.eq i:nth-child(2) { animation-delay: -0.35s; }
-.eq i:nth-child(3) { animation-delay: -0.6s; }
-@keyframes eq { from { transform: scaleY(0.3); } to { transform: scaleY(1); } }
+.out-link:hover { color: var(--text); }
 
 @media (max-width: 520px) {
   .page { margin-top: 64px; gap: 60px; }
   .actions { flex-wrap: wrap; }
-  .playing { max-width: 160px; }
 }
 </style>

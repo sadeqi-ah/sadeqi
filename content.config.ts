@@ -84,7 +84,6 @@ export default defineContentConfig({
       type: 'data',
       source: 'media.yml',
       schema: z.object({
-        letterboxd: z.string().optional(),
         /** Spotify playlist URL — its tracks are listed on the home page. */
         playlist: z.string().optional(),
         /** Favourite films & series; posters are looked up by title (server/api/favourites). */

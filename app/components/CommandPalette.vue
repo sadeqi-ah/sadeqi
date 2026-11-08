@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onKeyStroke } from '@vueuse/core'
 
-interface Item { label: string, hint: string, to: string, group: string }
+interface Item { label: string, hint: string, to: string, group: string, run?: () => void }
 
 const open = usePalette()
+const { theme, toggle: toggleTheme } = useTheme()
 const router = useRouter()
 const query = ref('')
 const active = ref(0)
@@ -16,6 +17,8 @@ const pages: Item[] = [
   { label: 'Research', hint: '~/research', to: '/research', group: 'pages' },
   { label: 'Writing', hint: '~/writing', to: '/writing', group: 'pages' },
   { label: 'Resume', hint: '~/resume', to: '/resume', group: 'pages' },
+  { label: 'Favourite music', hint: '~/music', to: '/music', group: 'pages' },
+  { label: 'Films & series', hint: '~/films', to: '/films', group: 'pages' },
   { label: 'RSS feed', hint: '/rss.xml', to: '/rss.xml', group: 'pages' },
 ]
 
@@ -27,8 +30,16 @@ const { data: posts, execute } = useAsyncData(
 )
 
 const items = computed<Item[]>(() => {
-  const all = [
+  const all: Item[] = [
     ...pages,
+    {
+      label: theme.value === 'dark' ? 'Light theme' : 'Dark theme',
+      hint: 'theme',
+      to: '#theme',
+      group: 'actions',
+      // reveal from the top-right corner, where the nav toggle lives
+      run: () => toggleTheme({ x: innerWidth, y: 0 }),
+    },
     ...(posts.value ?? []).map(p => ({ label: p.title, hint: formatMonthYear(p.date), to: p.path, group: 'writing' })),
   ]
   const q = query.value.trim().toLowerCase()
@@ -56,6 +67,7 @@ onKeyStroke('Escape', () => { open.value = false })
 function go(item?: Item) {
   if (!item) return
   open.value = false
+  if (item.run) return item.run()
   if (item.to.endsWith('.xml')) window.location.href = item.to
   else router.push(item.to)
 }
@@ -121,7 +133,7 @@ function onKey(e: KeyboardEvent) {
   justify-content: center;
   align-items: flex-start;
   padding: 14vh 20px 20px;
-  background: rgba(250, 250, 249, 0.6);
+  background: var(--scrim);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
@@ -130,7 +142,7 @@ function onKey(e: KeyboardEvent) {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 24px 60px -12px var(--shadow-soft), 0 2px 6px var(--shadow-soft);
   overflow: hidden;
 }
 .search {
