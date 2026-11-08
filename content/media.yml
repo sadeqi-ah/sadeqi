@@ -1,12 +1,6 @@
-nowPlaying: Track · Artist
 letterboxd: https://letterboxd.com/username
-playlists:
-  - name: Late night code
-    tracks: 64
-  - name: Persian classics
-    tracks: 38
-  - name: Focus
-    tracks: 112
+# Edit the playlist on Spotify to change what shows on the site.
+playlist: https://open.spotify.com/playlist/5learNOVof5yQtIV1AgT07
 watching:
   - title: Film title
     kind: Film · 2024

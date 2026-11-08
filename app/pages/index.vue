@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { PlaylistTrack } from '~~/server/api/playlist.get'
+
 const { data: site } = await useSite()
 
 const { data } = await useAsyncData('home', async () => {
@@ -16,26 +18,33 @@ const { data } = await useAsyncData('home', async () => {
 useSeoMeta({
   title: 'Amir Hossein Sadeghi — from pixels to packets',
   ogTitle: 'Amir Hossein Sadeghi',
-  description: 'Software developer moving into networking. Research on consensus in low-power wireless and ad hoc networks.',
+  description: 'Software developer moving into networking. Research on consensus in low-power wireless and ad-hoc networks.',
 })
 
 const resumeTo = '/resume'
+
+// Tracks come straight from the Spotify playlist linked in media.yml.
+const { data: playlist } = await useFetch('/api/playlist')
+const playing = ref<PlaylistTrack | null>(null)
 </script>
 
 <template>
   <main class="page home">
     <!-- Hero -->
     <section class="hero stagger">
-      <div class="heading" style="--i: 0">
-        <p class="name">{{ site?.name }}</p>
-        <h1 class="tagline">
-          From <em class="serif">pixels</em> to <PacketsText text="packets" />.
-        </h1>
-        <p class="location">
-          <img src="/svg/pin.svg" alt="" width="14" height="14">
-          <span>{{ site?.location }}</span>
-          <LocalClock v-if="site" :timezone="site.timezone" />
-        </p>
+      <div class="top" style="--i: 0">
+        <div class="heading">
+          <p class="name">{{ site?.name }}</p>
+          <h1 class="tagline">
+            From <em class="serif"><PixelText text="pixels" /></em> to <PacketsText text="packets" />.
+          </h1>
+          <p class="location">
+            <img src="/svg/pin.svg" alt="" width="14" height="14">
+            <span>{{ site?.location }}</span>
+            <LocalClock v-if="site" :timezone="site.timezone" />
+          </p>
+        </div>
+        <HeroPortrait src="/amir.webp" :alt="site?.name ?? 'Portrait'" :delay="250" />
       </div>
 
       <ContentRenderer v-if="data?.intro" :value="data.intro" class="intro" style="--i: 1" />
@@ -103,21 +112,15 @@ const resumeTo = '/resume'
     </section>
 
     <!-- Listening -->
-    <section v-if="data?.media" class="section">
-      <SectionLabel label="Listening" :action="data.media.nowPlaying">
+    <section v-if="playlist?.tracks.length" class="section">
+      <SectionLabel v-if="playing" label="Listening" :action="playing.title">
         <template #action>
           <span class="eq" aria-hidden="true"><i /><i /><i /></span>
-          now playing — {{ data.media.nowPlaying }}
+          <span class="playing">{{ playing.title }} · {{ playing.artist }}</span>
         </template>
       </SectionLabel>
-      <div class="playlists">
-        <PlaylistCard
-          v-for="(pl, i) in data.media.playlists"
-          :key="pl.name"
-          v-reveal="i * 90"
-          v-bind="pl"
-        />
-      </div>
+      <SectionLabel v-else label="Listening" :action="`${playlist.name} ↗`" :to="playlist.url" />
+      <TrackList v-model:current="playing" :tracks="playlist.tracks" />
     </section>
 
     <!-- Watching -->
@@ -142,7 +145,8 @@ const resumeTo = '/resume'
 .page { display: flex; flex-direction: column; gap: 72px; margin-top: 96px; }
 
 .hero { display: flex; flex-direction: column; gap: 20px; }
-.heading { display: flex; flex-direction: column; gap: 6px; padding-bottom: 8px; }
+.top { display: flex; align-items: flex-start; gap: 24px; }
+.heading { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-bottom: 8px; }
 .name { font-size: 15px; font-weight: 500; line-height: 1.4; }
 .tagline {
   font-size: 30px;
@@ -179,7 +183,7 @@ const resumeTo = '/resume'
 .section { display: flex; flex-direction: column; gap: 12px; }
 .list { display: flex; flex-direction: column; }
 
-.playlists { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.playing { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
 
 .eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 9px; }
 .eq i {
@@ -197,6 +201,6 @@ const resumeTo = '/resume'
 @media (max-width: 520px) {
   .page { margin-top: 64px; gap: 60px; }
   .actions { flex-wrap: wrap; }
-  .playlists { gap: 10px; }
+  .playing { max-width: 160px; }
 }
 </style>

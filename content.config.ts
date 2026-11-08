@@ -82,14 +82,9 @@ export default defineContentConfig({
       type: 'data',
       source: 'media.yml',
       schema: z.object({
-        nowPlaying: z.string().optional(),
         letterboxd: z.string().optional(),
-        playlists: z.array(z.object({
-          name: z.string(),
-          tracks: z.number(),
-          cover: z.string().optional(),
-          href: z.string().optional(),
-        })),
+        /** Spotify playlist URL — its tracks are listed on the home page. */
+        playlist: z.string().optional(),
         watching: z.array(z.object({
           title: z.string(),
           kind: z.string(),
