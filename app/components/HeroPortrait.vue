@@ -3,70 +3,15 @@
  * The portrait on the home page. It "develops" from coarse pixels into the
  * photo (from pixels…), then tilts toward the pointer with a soft glare, like
  * a print held up to the light.
+ *
+ * The develop is pure CSS: tiny pre-averaged frames (see utils/portraitFrames)
+ * are scaled up with `image-rendering: pixelated` and stacked, each popping in
+ * on a timer. It starts with the HTML, on the same clock as the hero stagger,
+ * so it never waits for hydration and never shows an empty card.
  */
-const props = withDefaults(defineProps<{ src: string, alt: string, delay?: number }>(), { delay: 0 })
+withDefaults(defineProps<{ src: string, alt: string, delay?: number }>(), { delay: 0 })
 
 const root = ref<HTMLElement>()
-const canvas = ref<HTMLCanvasElement>()
-const photo = ref<HTMLImageElement>()
-const developed = ref(false)
-
-// block sizes in CSS px, coarse → fine; each held for one frame step
-const STEPS = [24, 16, 11, 8, 6, 4, 3, 2]
-const STEP_MS = 85
-
-function draw(img: HTMLImageElement, block: number) {
-  const c = canvas.value
-  if (!c) return
-  const dpr = window.devicePixelRatio || 1
-  const W = c.clientWidth * dpr
-  const H = c.clientHeight * dpr
-  c.width = W
-  c.height = H
-  // object-fit: cover, anchored slightly above centre like the <img>
-  const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight)
-  const sw = W / scale
-  const sh = H / scale
-  const sx = (img.naturalWidth - sw) / 2
-  const sy = (img.naturalHeight - sh) * 0.35
-  const w = Math.max(1, Math.round(c.clientWidth / block))
-  const h = Math.max(1, Math.round(c.clientHeight / block))
-  const off = document.createElement('canvas')
-  off.width = w
-  off.height = h
-  off.getContext('2d')!.drawImage(img, sx, sy, sw, sh, 0, 0, w, h)
-  const ctx = c.getContext('2d')!
-  ctx.imageSmoothingEnabled = false
-  ctx.drawImage(off, 0, 0, w, h, 0, 0, W, H)
-}
-
-const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
-
-onMounted(async () => {
-  const img = photo.value!
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    developed.value = true
-    return
-  }
-  // never leave an empty frame: if the photo is slow (or the tab is in the
-  // background, where decoding can be deferred) just show it when it lands
-  const loaded = img.complete
-    ? Promise.resolve()
-    : new Promise<void>(r => img.addEventListener('load', () => r(), { once: true }))
-  const ok = await Promise.race([loaded.then(() => true), wait(1500).then(() => false)])
-  if (!ok || !img.naturalWidth) {
-    developed.value = true
-    return
-  }
-  draw(img, STEPS[0]!)
-  await wait(props.delay)
-  for (const block of STEPS.slice(1)) {
-    await wait(STEP_MS)
-    draw(img, block)
-  }
-  await wait(STEP_MS)
-  developed.value = true
-})
 
 // pointer tilt + glare
 function onMove(e: PointerEvent) {
@@ -87,9 +32,21 @@ function onLeave() {
 
 <template>
   <div class="stage" @pointermove="onMove" @pointerleave="onLeave">
-    <figure ref="root" class="portrait" :class="{ developed }">
-      <img ref="photo" :src="src" :alt="alt" width="1467" height="2000" decoding="async">
-      <canvas ref="canvas" aria-hidden="true" />
+    <figure
+      ref="root"
+      class="portrait"
+      :style="{ '--delay': `${delay}ms`, '--frames': PORTRAIT_FRAMES.length }"
+    >
+      <img
+        v-for="(frame, i) in PORTRAIT_FRAMES"
+        :key="i"
+        class="frame"
+        :src="frame"
+        :style="{ '--f': i }"
+        alt=""
+        aria-hidden="true"
+      >
+      <img class="photo" :src="src" :alt="alt" width="312" height="426" fetchpriority="high">
       <span class="glare" aria-hidden="true" />
     </figure>
   </div>
@@ -100,6 +57,7 @@ function onLeave() {
 .portrait {
   --rx: 0deg;
   --ry: 0deg;
+  --step: 80ms;
   position: relative;
   width: 104px;
   aspect-ratio: 104 / 136;
@@ -123,24 +81,34 @@ function onLeave() {
     0 2px 4px rgba(0, 0, 0, 0.06),
     0 22px 40px -16px rgba(60, 40, 10, 0.55);
 }
-.portrait img,
-.portrait canvas {
+.portrait img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
-.portrait img {
+
+/* Frames are opaque and stacked coarse → fine, so each one simply covers the
+   last. The first is visible from the first paint; the rest pop in on a step. */
+.frame {
+  image-rendering: pixelated;
+  opacity: 0;
+  animation: pop 0s linear calc(var(--delay) + var(--f) * var(--step)) forwards;
+}
+.frame:first-child { opacity: 1; animation: none; }
+@keyframes pop { to { opacity: 1; } }
+
+/* The photo fades in over the finest frame. If it hasn't loaded yet, the
+   finest frame just stays until it does — never a blank card. */
+.photo {
   object-fit: cover;
   object-position: 50% 35%;
-  opacity: 0;
   filter: saturate(0.9) contrast(1.02);
+  animation: develop 0.35s var(--ease-out) calc(var(--delay) + var(--frames) * var(--step)) both;
   transition: filter 0.6s var(--ease-out);
 }
-.stage:hover .portrait img { filter: saturate(1.08) contrast(1.04); }
-.portrait canvas { image-rendering: pixelated; transition: opacity 0.35s var(--ease-out); }
-.portrait.developed img { opacity: 1; }
-.portrait.developed canvas { opacity: 0; }
+@keyframes develop { from { opacity: 0; } }
+.stage:hover .portrait .photo { filter: saturate(1.08) contrast(1.04); }
 
 .glare {
   position: absolute;
@@ -158,5 +126,6 @@ function onLeave() {
 }
 @media (prefers-reduced-motion: reduce) {
   .portrait, .stage:hover .portrait { transform: none; }
+  .frame { display: none; }
 }
 </style>

@@ -44,7 +44,7 @@ const playing = ref<PlaylistTrack | null>(null)
             <LocalClock v-if="site" :timezone="site.timezone" />
           </p>
         </div>
-        <HeroPortrait src="/amir.webp" :alt="site?.name ?? 'Portrait'" :delay="250" />
+        <HeroPortrait src="/amir-sm.webp" :alt="site?.name ?? 'Portrait'" :delay="250" />
       </div>
 
       <ContentRenderer v-if="data?.intro" :value="data.intro" class="intro" style="--i: 1" />
