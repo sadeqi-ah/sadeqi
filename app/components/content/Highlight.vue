@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * MDC inline component — a highlighter that sweeps in left→right once.
- *   :highlight[low-power wireless and ad hoc networks]
+ *   :highlight[low-power wireless and ad-hoc networks]
  */
 withDefaults(defineProps<{ delay?: number }>(), { delay: 700 })
 </script>

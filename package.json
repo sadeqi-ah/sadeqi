@@ -15,5 +15,8 @@
     "@vueuse/core": "^15.0.0",
     "@vueuse/nuxt": "^15.0.0",
     "nuxt": "^4.6.4"
+  },
+  "devDependencies": {
+    "@iconify-json/simple-icons": "^1.2.101"
   }
 }

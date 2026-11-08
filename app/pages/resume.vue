@@ -157,7 +157,7 @@ useSeoMeta({ title: 'Resume — Amir Hossein Sadeghi', description: 'Network & S
 
 .identity { display: flex; align-items: center; gap: 16px; }
 .avatar { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
-.photo { width: 72px; height: 72px; border-radius: 999px; object-fit: cover; border: 1px solid var(--border); }
+.photo { width: 72px; height: 72px; border-radius: 999px; object-fit: cover; object-position: 50% 30%; border: 1px solid var(--border); }
 .photo-label {
   position: absolute;
   inset: 0;

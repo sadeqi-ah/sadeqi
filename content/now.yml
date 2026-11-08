@@ -3,7 +3,6 @@ items:
   - title: Consensus protocol simulations
     meta: research · python
     progress: 70
-    active: true
   - title: VLAN + OSPF homelab
     meta: lab
     progress: 40

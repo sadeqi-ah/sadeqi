@@ -5,6 +5,7 @@ const route = useRoute()
 const palette = usePalette()
 
 const links = [
+  { to: '/', label: 'home' },
   { to: '/projects', label: 'projects' },
   { to: '/research', label: 'research' },
   { to: '/writing', label: 'writing' },
@@ -17,7 +18,7 @@ const { width: wrapWidth } = useElementSize(wrap)
 const { width: navWidth } = useElementSize(nav, undefined, { box: 'border-box' })
 
 const isHome = computed(() => route.path === '/')
-const activeTo = computed(() => links.find(l => route.path.startsWith(l.to))?.to ?? null)
+const activeTo = computed(() => links.find(l => l.to === '/' ? route.path === '/' : route.path.startsWith(l.to))?.to ?? null)
 const hovered = ref<string | null>(null)
 const target = computed(() => hovered.value ?? activeTo.value)
 
@@ -151,7 +152,7 @@ const blobStyle = computed(() => ({
   transition: color 0.2s var(--ease-out);
 }
 .link.active,
-.link.router-link-active { color: var(--text); }
+.link.router-link-active:not([data-to="/"]) { color: var(--text); }
 .kbd {
   position: relative;
   padding: 3px 8px;

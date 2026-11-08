@@ -1,11 +1,11 @@
 <script setup lang="ts">
-defineProps<{ items: { title: string, meta: string, progress: number, active?: boolean }[] }>()
+defineProps<{ items: { title: string, meta: string, progress: number }[] }>()
 </script>
 
 <template>
   <ul v-reveal class="card">
     <li v-for="(item, i) in items" :key="item.title" class="item" :style="{ '--i': i, '--target': item.progress }">
-      <span class="arrow" :class="{ active: item.active }">→</span>
+      <span class="arrow">→</span>
       <span class="title">{{ item.title }}</span>
       <span class="meta">{{ item.meta }}</span>
       <span class="spacer" />
@@ -39,8 +39,7 @@ defineProps<{ items: { title: string, meta: string, progress: number, active?: b
   line-height: normal;
 }
 .item:last-child { border-bottom: 0; }
-.arrow { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
-.arrow.active { color: var(--accent); animation: nudge 1.8s var(--ease-in-out) infinite; }
+.arrow { font-family: var(--font-mono); font-size: 12px; color: var(--accent); animation: nudge 1.8s var(--ease-in-out) infinite; }
 @keyframes nudge { 50% { transform: translateX(3px); } }
 .title { font-size: 15px; white-space: nowrap; }
 .meta { font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
