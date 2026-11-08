@@ -1,0 +1,5 @@
+items:
+  - title: "Reading list: consensus under partial synchrony"
+  - title: How I store and query 10GB of simulation CSVs
+    href: /writing/plotting-10gb-csvs
+  - title: Plotting conventions I use for every figure

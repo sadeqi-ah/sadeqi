@@ -1,0 +1,12 @@
+title: Home Lab
+short: VLANs, OSPF & automation
+description: Containerlab topology with VLANs, OSPF areas and Ansible playbooks. Every config is versioned and every lab has a diagram and a post.
+year: ongoing
+category: labs
+stack: [containerlab, FRR, Ansible]
+order: 3
+links:
+  - label: GitHub ↗
+    href: https://github.com/username/home-lab
+  - label: Diagrams →
+    href: /writing

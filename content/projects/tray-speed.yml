@@ -1,0 +1,10 @@
+title: Tray Speed
+short: Live traffic in the macOS menu bar
+description: A tiny macOS menu-bar app that renders real-time upload/download speeds into the tray icon with almost no CPU.
+year: "2026"
+category: desktop
+stack: [Rust, Tauri, macOS]
+order: 2
+links:
+  - label: GitHub ↗
+    href: https://github.com/username/tray-speed

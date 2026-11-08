@@ -1,0 +1,12 @@
+title: sing-box GUI
+short: Proxy & routing manager
+description: A desktop app for managing proxies, route rules and live traffic on top of the sing-box core. Typed config forms, rule editor and per-connection stats.
+year: "2026"
+category: desktop
+stack: [Tauri, Rust, SvelteKit, sing-box]
+order: 1
+links:
+  - label: GitHub ↗
+    href: https://github.com/username/sing-box-gui
+  - label: Write-up →
+    href: /writing
