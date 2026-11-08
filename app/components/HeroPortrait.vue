@@ -1,13 +1,11 @@
 <script setup lang="ts">
 /**
- * The portrait on the home page. It "develops" from coarse pixels into the
- * photo (from pixels…), then tilts toward the pointer with a soft glare, like
- * a print held up to the light.
+ * The portrait on the home page. It develops like an instant-film print —
+ * pale and washed-out, warming into full colour — then tilts toward the
+ * pointer with a soft glare, like a print held up to the light.
  *
- * The develop is pure CSS: tiny pre-averaged frames (see utils/portraitFrames)
- * are scaled up with `image-rendering: pixelated` and stacked, each popping in
- * on a timer. It starts with the HTML, on the same clock as the hero stagger,
- * so it never waits for hydration and never shows an empty card.
+ * The develop is pure CSS, so it starts with the HTML on the same clock as
+ * the hero stagger and never waits for hydration.
  */
 withDefaults(defineProps<{ src: string, alt: string, delay?: number }>(), { delay: 0 })
 
@@ -32,21 +30,8 @@ function onLeave() {
 
 <template>
   <div class="stage" @pointermove="onMove" @pointerleave="onLeave">
-    <figure
-      ref="root"
-      class="portrait"
-      :style="{ '--delay': `${delay}ms`, '--frames': PORTRAIT_FRAMES.length }"
-    >
-      <img
-        v-for="(frame, i) in PORTRAIT_FRAMES"
-        :key="i"
-        class="frame"
-        :src="frame"
-        :style="{ '--f': i }"
-        alt=""
-        aria-hidden="true"
-      >
-      <img class="photo" :src="src" :alt="alt" width="312" height="426" fetchpriority="high">
+    <figure ref="root" class="portrait" :style="{ '--delay': `${delay}ms` }">
+      <img :src="src" :alt="alt" width="312" height="426" fetchpriority="high">
       <span class="glare" aria-hidden="true" />
     </figure>
   </div>
@@ -57,14 +42,14 @@ function onLeave() {
 .portrait {
   --rx: 0deg;
   --ry: 0deg;
-  --step: 80ms;
   position: relative;
   width: 104px;
   aspect-ratio: 104 / 136;
   margin: 0;
   border-radius: 10px;
   overflow: hidden;
-  background: var(--surface);
+  /* the blank print: warm, pale paper the image surfaces out of */
+  background: #ece6da;
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.06),
     0 1px 2px rgba(0, 0, 0, 0.06),
@@ -86,29 +71,23 @@ function onLeave() {
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-/* Frames are opaque and stacked coarse → fine, so each one simply covers the
-   last. The first is visible from the first paint; the rest pop in on a step. */
-.frame {
-  image-rendering: pixelated;
-  opacity: 0;
-  animation: pop 0s linear calc(var(--delay) + var(--f) * var(--step)) forwards;
-}
-.frame:first-child { opacity: 1; animation: none; }
-@keyframes pop { to { opacity: 1; } }
-
-/* The photo fades in over the finest frame. If it hasn't loaded yet, the
-   finest frame just stays until it does — never a blank card. */
-.photo {
   object-fit: cover;
   object-position: 50% 35%;
   filter: saturate(0.9) contrast(1.02);
-  animation: develop 0.35s var(--ease-out) calc(var(--delay) + var(--frames) * var(--step)) both;
+  /* ease-out: most of the image shows up fast, the last of the colour lingers */
+  /* `backwards`, not `both`: once done the animation lets go of `filter`,
+     so the hover saturate below still works */
+  animation: develop 2.2s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay) backwards;
   transition: filter 0.6s var(--ease-out);
 }
-@keyframes develop { from { opacity: 0; } }
-.stage:hover .portrait .photo { filter: saturate(1.08) contrast(1.04); }
+/* Instant film: first a faint ghost, then contrast, then colour. */
+@keyframes develop {
+  0% { opacity: 0; filter: brightness(1.5) contrast(0.35) saturate(0) sepia(0.4); }
+  25% { opacity: 1; filter: brightness(1.3) contrast(0.55) saturate(0.2) sepia(0.35); }
+  60% { filter: brightness(1.08) contrast(0.85) saturate(0.6) sepia(0.15); }
+  100% { opacity: 1; filter: saturate(0.9) contrast(1.02); }
+}
+.stage:hover .portrait img { filter: saturate(1.08) contrast(1.04); }
 
 .glare {
   position: absolute;
@@ -126,6 +105,5 @@ function onLeave() {
 }
 @media (prefers-reduced-motion: reduce) {
   .portrait, .stage:hover .portrait { transform: none; }
-  .frame { display: none; }
 }
 </style>
