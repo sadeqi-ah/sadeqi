@@ -16,6 +16,88 @@ export interface BoatModel {
   billow: { value: number }
   /** lantern position in boat space, for its halo */
   lantern: THREE.Vector3
+  /** the ship's cat, in a captain's hat */
+  captain: Captain
+  /** top of the mast in boat space, where a gull can perch */
+  masthead: THREE.Vector3
+}
+
+/** which way the cat faces, as a heading in boat space (0 = bow, clockwise) */
+export const CAPTAIN_FACING = 2.5
+
+export interface Captain {
+  root: THREE.Group
+  head: THREE.Group
+  arms: [THREE.Group, THREE.Group]
+  tail: THREE.Group
+}
+
+/**
+ * A little orange cat with a white muzzle, a navy-and-white captain's hat,
+ * paws it can wave and a tail that swishes. Faces the bow (-z); feet at y 0.
+ */
+function createCaptain(props: THREE.Material): Captain {
+  const fur = '#ffa94d'
+  const pale = '#fff1dc'
+  const root = new THREE.Group()
+  const sphere = new THREE.SphereGeometry(1, 12, 9)
+  const cone = new THREE.ConeGeometry(1, 1, 4)
+  const cyl = new THREE.CylinderGeometry(1, 1, 1, 14)
+  const mk = (b: Builder) => {
+    const m = new THREE.Mesh(b.build()!, props)
+    m.castShadow = true
+    return m
+  }
+
+  const body = new Builder()
+  body.add(sphere, v => (v.z < -0.45 && v.y < 0.4 ? pale : fur), mat4([0, 0.24, 0], [0, 0, 0], [0.2, 0.24, 0.18]))
+  for (const s of [-1, 1]) body.add(sphere, pale, mat4([0.09 * s, 0.03, -0.08], [0, 0, 0], [0.07, 0.04, 0.09]))
+  root.add(mk(body))
+
+  const head = new THREE.Group()
+  head.position.set(0, 0.5, 0)
+  const hb = new Builder()
+  hb.add(sphere, fur, mat4([0, 0.13, 0], [0, 0, 0], [0.21, 0.18, 0.19]))
+  hb.add(sphere, pale, mat4([0, 0.07, -0.14], [0, 0, 0], [0.11, 0.07, 0.07]))
+  hb.add(sphere, '#ff8fa3', mat4([0, 0.11, -0.2], [0, 0, 0], [0.025, 0.018, 0.02]))
+  for (const s of [-1, 1]) {
+    hb.add(cone, fur, mat4([0.12 * s, 0.3, 0], [0, 0, s * -0.35], [0.07, 0.14, 0.05]))
+    hb.add(cone, '#ffc2cf', mat4([0.12 * s, 0.29, -0.012], [0, 0, s * -0.35], [0.04, 0.09, 0.03]))
+    hb.add(sphere, '#26222a', mat4([0.075 * s, 0.17, -0.165], [0, 0, 0], [0.032, 0.04, 0.02]), 0, 0)
+    hb.add(sphere, '#ffffff', mat4([0.075 * s + 0.012, 0.185, -0.18], [0, 0, 0], [0.01, 0.01, 0.01]), 0, 0)
+    hb.add(sphere, '#ffb0bf', mat4([0.13 * s, 0.09, -0.13], [0, 0, 0], [0.035, 0.022, 0.015]), 0, 0)
+  }
+  // the hat: white crown, navy band and peak, a gold anchor-ish badge
+  hb.add(cyl, '#ffffff', mat4([0, 0.33, 0.01], [-0.12, 0, 0], [0.17, 0.09, 0.17]))
+  hb.add(cyl, '#25355e', mat4([0, 0.29, 0.01], [-0.12, 0, 0], [0.175, 0.035, 0.175]))
+  hb.add(sphere, '#25355e', mat4([0, 0.28, -0.13], [-0.25, 0, 0], [0.13, 0.015, 0.08]))
+  hb.add(sphere, '#ffd23f', mat4([0, 0.31, -0.16], [0, 0, 0], [0.03, 0.03, 0.015]), 0, 0)
+  head.add(mk(hb))
+  root.add(head)
+
+  const arms: THREE.Group[] = []
+  for (const s of [-1, 1]) {
+    const pivot = new THREE.Group()
+    pivot.position.set(0.16 * s, 0.36, -0.04)
+    const ab = new Builder()
+    ab.add(sphere, fur, mat4([0.02 * s, -0.1, 0], [0, 0, 0], [0.05, 0.11, 0.05]))
+    ab.add(sphere, pale, mat4([0.025 * s, -0.2, 0], [0, 0, 0], [0.055, 0.045, 0.055]))
+    pivot.add(mk(ab))
+    root.add(pivot)
+    arms.push(pivot)
+  }
+
+  const tail = new THREE.Group()
+  tail.position.set(0, 0.1, 0.16)
+  const tb = new Builder()
+  for (let i = 0; i < 5; i++) {
+    const t = i / 4
+    tb.add(sphere, i === 4 ? pale : fur, mat4([0, 0.05 + t * 0.32, 0.06 + Math.sin(t * 2.4) * 0.12], [0, 0, 0], 0.045 - t * 0.006))
+  }
+  tail.add(mk(tb))
+  root.add(tail)
+  ;[sphere, cone, cyl].forEach(g => g.dispose())
+  return { root, head, arms: arms as [THREE.Group, THREE.Group], tail }
 }
 
 /** a triangle of cloth between three corners, as a fine grid with billow weights */
@@ -152,6 +234,13 @@ export function createBoat(props: THREE.Material, glow: THREE.Material): BoatMod
   const stay = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 3.38, -0.32), new THREE.Vector3(0, 0.9, -1.62)])
   tilt.add(new THREE.Line(stay, curved(new THREE.LineBasicMaterial({ color: '#5a4030' }))))
 
+  const captain = createCaptain(props)
+  captain.root.position.set(0.36, 0.17, 0.5)
+  captain.root.scale.setScalar(1.5)
+  // turned back over its shoulder, towards the camera (which sits behind and to starboard)
+  captain.root.rotation.y = -CAPTAIN_FACING
+  tilt.add(captain.root)
+
   group.traverse((o) => { o.frustumCulled = false })
-  return { group, tilt, billow, lantern }
+  return { group, tilt, billow, lantern, captain, masthead: new THREE.Vector3(0, 3.6, -0.32) }
 }

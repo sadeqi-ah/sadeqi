@@ -23,10 +23,13 @@ import {
   skyMaterial, skyU, terrainColors, terrainMaterial, waterColors, waterMaterial, waterU,
 } from './materials'
 import { Builder, decorate, mat4 } from './props'
-import { createBoat, type BoatModel } from './boat'
+import { CAPTAIN_FACING, createBoat, type BoatModel } from './boat'
 import { CORK_Y, INNER, createBottle, disposeBottle, type BottleMesh } from './bottle'
 import { sampleSurface, type SurfacePoint } from './waves'
 import type { SeaSynth } from './synth'
+import { Sparkles } from './fx'
+import { Critters, type CritterEnv } from './critters'
+import { Weather, type WeatherEnv } from './weather'
 
 // ───────── tuning ─────────
 const CAM_YAW = 0.6
@@ -66,6 +69,10 @@ const ease = {
   in: (t: number) => t * t * t,
   back: (t: number) => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2,
   lin: (t: number) => t,
+}
+const smoothK = (k: number, a: number, b: number) => {
+  const t = Math.min(1, Math.max(0, (k - a) / (b - a)))
+  return t * t * (3 - 2 * t)
 }
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a))
 const clamp = THREE.MathUtils.clamp
@@ -107,6 +114,10 @@ interface Gull {
   a: number
   w: number
   phase: number
+  /** circling, or coming down to / sitting on / leaving the masthead */
+  perch: 'no' | 'in' | 'on' | 'out'
+  pt: number
+  from: THREE.Vector3
 }
 
 interface Cloud { mesh: THREE.Mesh, mat: THREE.MeshLambertMaterial, x: number, z: number, y: number, speed: number }
@@ -242,7 +253,17 @@ export class SeaEngine {
   private io: IntersectionObserver
   private dpr: number
   private frameTimes: number[] = []
-  private timers = { relocate: 0, chime: 6, gull: 9, more: 0 }
+  private timers = { relocate: 0, chime: 6, gull: 9, more: 0, perch: 14 }
+  private sparkles: Sparkles
+  private critters: Critters
+  private weather: Weather
+  private critterEnv: CritterEnv
+  private weatherEnv: WeatherEnv
+  private gloom = 0
+  /** the boat's rubbery wobble after a bump (spring), and the captain's moods */
+  private wobble = { v: 0, x: 0 }
+  private cap = { cheer: -1, hop: -1, dizzy: 0, look: 0, lastBubble: 0 }
+  private hornAt = -9
   phase: 'idle' | 'busy' | 'holding' = 'idle'
   /** show the way to the nearest new bottle */
   guide = true
@@ -307,6 +328,29 @@ export class SeaEngine {
     this.makeClouds(mobile ? 9 : 13)
     this.makeGulls(4)
     this.fish = { mesh: this.makeFish(), t: -1, wait: 4, from: new THREE.Vector2(), dir: new THREE.Vector2() }
+    this.sparkles = new Sparkles(this.scene, mobile)
+    const surf: SurfacePoint = { y: 0, nx: 0, ny: 1, nz: 0 }
+    this.critterEnv = {
+      scene: this.scene, props: this.propsMat, synth: opts.synth, sparkles: this.sparkles, boat: this.boat,
+      camYaw: CAM_YAW, clock: 0, night: 0, reduced: opts.reducedMotion,
+      seaY: (x, z) => sampleSurface(x, z, this.waveTime, surf).y * waterU.uWaveAmp.value,
+      splash: (x, y, z, n, f) => this.emitSplash(x, y, z, n, f),
+      drop: (x, y, z, vx, vy, vz) => this.emitDrop(x, y, z, vx, vy, vz),
+      ripple: (x, z, k) => this.addRipple(x, z, k),
+    }
+    this.critters = new Critters(this.critterEnv, mobile)
+    this.weatherEnv = {
+      scene: this.scene, camera: this.camera, synth: opts.synth, haloScale: this.haloMat.uniforms.uScale!,
+      reduced: opts.reducedMotion, target: this.camTarget, camDir: new THREE.Vector2(Math.sin(CAM_YAW), Math.cos(CAM_YAW)),
+      boat: this.boat, clock: 0, night: 0,
+      skyAt: (x, y) => {
+        const r = this.canvas.getBoundingClientRect()
+        const hit = this.seaAt(r.left + ((x + 1) / 2) * r.width, r.top + ((1 - y) / 2) * r.height)
+        return !hit || Math.hypot(hit.x - this.camTarget.x, hit.y - this.camTarget.z) > GRID.extent * 0.9
+      },
+    }
+    this.weather = new Weather(this.weatherEnv, mobile)
+    if (import.meta.dev) (window as unknown as { __sea: SeaEngine }).__sea = this
 
     this.markerMat = curved(new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, depthWrite: false }), { key: 'marker' })
     const ring = new THREE.RingGeometry(0.55, 0.8, 32)
@@ -384,6 +428,29 @@ export class SeaEngine {
     if (this.phase === 'idle' && this.nearId) this.opts.events.pick?.(this.nearId)
   }
 
+  /** toot toot: the captain hops, perched gulls take off, the sea rings */
+  horn() {
+    if (this.clock - this.hornAt < 0.9) return
+    this.hornAt = this.clock
+    this.opts.synth.horn()
+    this.cap.hop = 0
+    this.addRipple(this.boat.x, this.boat.z, 1)
+    this.wobble.v += 1.6
+    for (const g of this.gulls) if (g.perch === 'on' || g.perch === 'in') this.unperch(g)
+    const m = this.boatModel
+    const p = m.tilt.localToWorld(m.masthead.clone())
+    this.sparkles.emit('star', p.x, p.y - 2.2, p.z, 5, 0.5, 0.7)
+  }
+
+  /** for trying the weather out from the console */
+  showerNow() {
+    this.weather.showerNow()
+  }
+
+  wishNow() {
+    this.weather.wishNow()
+  }
+
   /** the HUD can lock steering while a letter is open */
   setControls(on: boolean) {
     this.controls = on
@@ -407,6 +474,11 @@ export class SeaEngine {
     this.addRipple(f.x, f.z, 1)
     this.emitSplash(f.x, f.y, f.z, 22, 0.9)
     this.opts.synth.splash(0.45)
+    this.sparkles.emit('confetti', f.x, f.y + 0.4, f.z, 46, 0.9, 1.1)
+    this.sparkles.emit('star', f.x, f.y + 0.3, f.z, 8, 0.8)
+    this.opts.synth.tada()
+    this.cap.cheer = 0
+    if (!this.opts.reducedMotion) this.zoom *= 0.9
     this.camera.attach(f.mesh.holder)
     setBend(f.mesh.holder, false)
     f.mesh.beacon.visible = false
@@ -753,6 +825,16 @@ export class SeaEngine {
       f.sq += f.sqv * dt
 
       const hot = this.nearId === f.id || this.hoverId === f.id ? 1 : 0
+      // unread and right there: it hops about, eager to be picked up
+      if (hot && !f.read && !this.opts.reducedMotion && f.y < 0.2 && f.vy < 0.5) {
+        const beat = Math.floor((this.clock + f.seed * 3) / 0.8)
+        if (beat !== Math.floor((this.clock - dt + f.seed * 3) / 0.8)) {
+          f.vy = 3.2
+          f.sq = 1.25
+          this.addRipple(f.x, f.z, 0.35)
+          this.opts.synth.hop(0.7)
+        }
+      }
       f.hover += (hot - f.hover) * (1 - Math.exp(-dt * 8))
       f.mesh.glass.uniforms.uHover!.value = f.hover
       h.position.set(f.x, f.y + f.hover * 0.25, f.z)
@@ -1062,8 +1144,12 @@ export class SeaEngine {
       if (b.speed > 2.2 && this.clock - b.lastThud > 0.8) {
         b.lastThud = this.clock
         this.opts.synth.thud()
+        this.opts.synth.boing()
         this.shake = 0.35
+        this.wobble.v += 2.6 * clamp(b.speed / MAX_SPEED, 0.4, 1.2)
+        this.cap.dizzy = 1.6
         this.emitSplash(nx + fx * 1.6, 0, nz + fz * 1.6, 10, 0.6)
+        this.sparkles.emit('star', nx + fx * 1.2, 1.4, nz + fz * 1.2, 7, 0.7, 0.8)
         this.addRipple(nx + fx * 1.4, nz + fz * 1.4, 0.8)
       }
       b.speed *= -0.25
@@ -1090,8 +1176,14 @@ export class SeaEngine {
     m.group.position.set(b.x, b.y - 0.04, b.z)
     m.group.rotation.y = -b.heading
     const speed01 = clamp(Math.abs(b.speed) / MAX_SPEED, 0, 1)
-    m.tilt.rotation.x = pitch * 0.9 + speed01 * 0.035
-    m.tilt.rotation.z = roll * 0.9 + b.turn * speed01 * 0.12
+    // jelly wobble: a damped spring, squashing the whole boat
+    const w = this.wobble
+    w.v += (-w.x * 140 - w.v * 9) * dt
+    w.x += w.v * dt
+    const sq = clamp(w.x * 0.08, -0.12, 0.12)
+    m.tilt.scale.set(1 + sq * 0.5, 1 - sq, 1 + sq * 0.5)
+    m.tilt.rotation.x = pitch * 0.9 + speed01 * 0.035 + sq * 0.6
+    m.tilt.rotation.z = roll * 0.9 + b.turn * speed01 * 0.12 + Math.sin(this.clock * 17) * sq * 0.8
     m.billow.value = 0.15 + 0.85 * speed01
 
     // wake and spray
@@ -1105,6 +1197,12 @@ export class SeaEngine {
       const side = Math.random() < 0.5 ? -1 : 1
       this.emitDrop(b.x + fx * 1.4 - fz * side * 0.45, 0.1, b.z + fz * 1.4 + fx * side * 0.45, -fz * side * 1.4 + fx * b.speed * 0.25, 1.6 + Math.random(), fx * side * 1.4 + fz * b.speed * 0.25)
     }
+    // a fizz of bubbles off the stern when she's moving
+    if (speed01 > 0.25 && this.clock - this.cap.lastBubble > 0.16 - speed01 * 0.08) {
+      this.cap.lastBubble = this.clock
+      const side = (Math.random() - 0.5) * 0.9
+      this.sparkles.emit('bubble', b.x - fx * 1.75 - fz * side, 0.02, b.z - fz * 1.75 + fx * side, 1)
+    }
     waterU.uBoat.value.set(b.x, b.z, b.heading, speed01)
     this.opts.synth.motion(speed01)
 
@@ -1114,6 +1212,50 @@ export class SeaEngine {
     if (this.dest) this.marker.position.set(this.dest.x, 0.08, this.dest.y)
     this.marker.scale.setScalar(1 + Math.sin(this.clock * 5) * 0.08)
     this.marker.visible = this.markerMat.opacity > 0.01
+  }
+
+  /** the ship's cat: looks at bottles, cheers when one's fished out, hops at the horn, goes dizzy on a bump */
+  private stepCaptain(dt: number) {
+    const c = this.boatModel.captain
+    const k = this.cap
+    let jump = 0
+    let armL = 0.2 + Math.sin(this.clock * 1.3) * 0.05
+    let armR = -armL
+    if (k.cheer >= 0) {
+      k.cheer += dt
+      const t = k.cheer
+      jump = t < 1.5 ? Math.abs(Math.sin(t * 8)) * 0.16 : 0
+      const up = smoothK(t, 0, 0.15) * (1 - smoothK(t, 1.6, 1.9))
+      armL += (-2.7 + Math.sin(t * 16) * 0.35 - armL) * up
+      armR += (2.7 - Math.sin(t * 16) * 0.35 - armR) * up
+      if (t > 1.9) k.cheer = -1
+    }
+    else if (this.phase === 'holding') {
+      // proudly holding up a paw while you hold the new bottle
+      armR = 2.4 + Math.sin(this.clock * 6) * 0.25
+    }
+    if (k.hop >= 0) {
+      k.hop += dt
+      jump = Math.max(jump, Math.sin(Math.min(k.hop / 0.4, 1) * Math.PI) * 0.22)
+      armR = Math.max(armR, 2.2 * Math.sin(Math.min(k.hop / 0.8, 1) * Math.PI))
+      if (k.hop > 0.8) k.hop = -1
+    }
+    c.root.position.y = 0.17 + jump
+    const breathe = 1 + Math.sin(this.clock * 2.4) * 0.015
+    c.root.scale.set(1.5 / Math.sqrt(breathe), 1.5 * breathe, 1.5 / Math.sqrt(breathe))
+    c.arms[0].rotation.z = armL
+    c.arms[1].rotation.z = armR
+    c.tail.rotation.y = Math.sin(this.clock * 2.1) * 0.5
+    c.tail.rotation.x = Math.sin(this.clock * 1.3) * 0.15
+    // watch the nearest bottle, else gaze about
+    let want = Math.sin(this.clock * 0.45) * 0.5 + Math.sin(this.clock * 1.1) * 0.15
+    const f = this.nearId ? this.bottles.get(this.nearId) : undefined
+    if (f) want = clamp(-wrap(Math.atan2(f.x - this.boat.x, -(f.z - this.boat.z)) - this.boat.heading - CAPTAIN_FACING), -1.3, 1.3)
+    k.look += (want - k.look) * (1 - Math.exp(-dt * 5))
+    c.head.rotation.y = k.look
+    k.dizzy = Math.max(0, k.dizzy - dt)
+    c.head.rotation.z = Math.sin(this.clock * 11) * 0.3 * Math.min(1, k.dizzy)
+    c.head.rotation.x = Math.cos(this.clock * 11) * 0.15 * Math.min(1, k.dizzy)
   }
 
   private markMoved() {
@@ -1254,12 +1396,65 @@ export class SeaEngine {
         if ((o as THREE.Mesh).isMesh) o.castShadow = true
       })
       this.scene.add(g)
-      this.gulls.push({ g, wl, wr, cx: SPAWN.x, cz: SPAWN.z - 20, tx: SPAWN.x, tz: SPAWN.z - 20, r: 7 + Math.random() * 8, h: 8 + Math.random() * 4, a: Math.random() * 6.28, w: (0.28 + Math.random() * 0.14) * (i % 2 ? 1 : -1), phase: Math.random() * 6 })
+      this.gulls.push({ g, wl, wr, cx: SPAWN.x, cz: SPAWN.z - 20, tx: SPAWN.x, tz: SPAWN.z - 20, r: 7 + Math.random() * 8, h: 8 + Math.random() * 4, a: Math.random() * 6.28, w: (0.28 + Math.random() * 0.14) * (i % 2 ? 1 : -1), phase: Math.random() * 6, perch: 'no', pt: 0, from: new THREE.Vector3() })
     }
   }
 
+  private unperch(g: Gull) {
+    g.from.copy(g.g.position)
+    g.perch = 'out'
+    g.pt = 0
+    g.wl.rotation.y = 0
+    g.wr.rotation.y = 0
+  }
+
   private stepGulls(dt: number) {
+    // now and then one comes down to rest on the masthead while you dawdle
+    this.timers.perch -= dt
+    if (this.timers.perch < 0) {
+      this.timers.perch = 22 + Math.random() * 25
+      const g = this.gulls[0]
+      if (g && g.perch === 'no' && this.boat.speed < 3.5 && this.night < 0.6 && !this.opts.reducedMotion) {
+        g.perch = 'in'
+        g.pt = 0
+        g.from.copy(g.g.position)
+      }
+    }
+    const m = this.boatModel
+    const mast = m.tilt.localToWorld(m.masthead.clone())
     for (const [i, gl] of this.gulls.entries()) {
+      if (gl.perch === 'in' || gl.perch === 'on') {
+        gl.pt += dt
+        if (gl.perch === 'in') {
+          const k = Math.min(gl.pt / 2.4, 1)
+          const e = ease.inOut(k)
+          gl.g.position.lerpVectors(gl.from, mast, e)
+          gl.g.position.y += Math.sin(k * Math.PI) * 1.4
+          const dx = mast.x - gl.from.x
+          const dz = mast.z - gl.from.z
+          gl.g.rotation.set(-0.25 * (1 - k) + 0.35 * smoothK(k, 0.75, 1), Math.atan2(-dx, -dz), 0)
+          const flap = Math.sin(this.clock * (k > 0.7 ? 16 : 9)) * 0.8
+          gl.wl.rotation.z = flap
+          gl.wr.rotation.z = -flap
+          if (k >= 1) {
+            gl.perch = 'on'
+            gl.pt = 0
+            this.opts.synth.gull()
+            this.wobble.v += 0.4
+          }
+        }
+        else {
+          gl.g.position.copy(mast)
+          gl.g.position.y += 0.06
+          // look about; tuck the wings in
+          const look = Math.sin(this.clock * 0.9 + Math.sin(this.clock * 2.3)) * 0.6
+          gl.g.rotation.set(Math.max(0, Math.sin(this.clock * 1.7)) * 0.25, -this.boat.heading + look, 0, 'YXZ')
+          gl.wl.rotation.set(0, -1.25, 0.35)
+          gl.wr.rotation.set(0, 1.25, -0.35)
+          if (gl.pt > 16 || this.boat.speed > 5.5) this.unperch(gl)
+        }
+        continue
+      }
       // every so often, pick an island near the boat (or the boat itself) to circle
       if (Math.floor((this.clock + i * 3) / 9) !== Math.floor((this.clock + i * 3 - dt) / 9)) {
         const isl = islandsNear(this.boat.x, this.boat.z, 50)[i % 2]
@@ -1274,6 +1469,18 @@ export class SeaEngine {
       const y = gl.h + Math.sin(gl.a * 2 + gl.phase) * 0.6
       const vx = -Math.sin(gl.a) * gl.w
       const vz = Math.cos(gl.a) * gl.w
+      if (gl.perch === 'out') {
+        gl.pt += dt
+        const k = Math.min(gl.pt / 2, 1)
+        gl.g.position.set(x, y, z).sub(gl.from).multiplyScalar(ease.inOut(k)).add(gl.from)
+        gl.g.position.y += Math.sin(k * Math.PI) * 1.2
+        gl.g.rotation.set(-0.3 * (1 - k), Math.atan2(-(x - gl.from.x), -(z - gl.from.z)), 0)
+        const flap = Math.sin(this.clock * 12) * 0.8
+        gl.wl.rotation.z = flap
+        gl.wr.rotation.z = -flap
+        if (k >= 1) gl.perch = 'no'
+        continue
+      }
       gl.g.position.set(x, y, z)
       gl.g.rotation.set(0, Math.atan2(-vx, -vz), -Math.sign(gl.w) * 0.35)
       // flap, then glide
@@ -1408,9 +1615,11 @@ export class SeaEngine {
 
   private applyNight(k: number) {
     const c = (a: string, b: string) => new THREE.Color(a).lerp(new THREE.Color(b), k)
-    this.fog.color.copy(c(DAY.fog, NIGHT.fog))
+    // a shower greys the day (and only dims the night a little)
+    const g = this.gloom * (1 - k * 0.6)
+    this.fog.color.copy(c(DAY.fog, NIGHT.fog)).lerp(new THREE.Color('#b4c2cc'), g * (1 - k) * 0.6)
     this.fog.color.getRGB(U.uFogColor.value, THREE.SRGBColorSpace)
-    skyU.uTop.value.copy(c(DAY.skyTop, NIGHT.skyTop))
+    skyU.uTop.value.copy(c(DAY.skyTop, NIGHT.skyTop)).lerp(new THREE.Color('#8ea4b8'), g * (1 - k) * 0.65)
     skyU.uHorizon.value.copy(this.fog.color)
     skyU.uSunGlow.value.copy(c(DAY.sunGlow, NIGHT.sunGlow))
     waterColors.uShallow.value.copy(c(DAY.shallow, NIGHT.shallow))
@@ -1421,19 +1630,22 @@ export class SeaEngine {
     waterColors.uSkyRefl.value.copy(c(DAY.skyRefl, NIGHT.skyRefl))
     waterColors.uSpec.value.copy(c(DAY.spec, NIGHT.spec))
     this.sun.color.copy(c(DAY.sun, NIGHT.sun))
-    this.sun.intensity = lerp(DAY.sunI, NIGHT.sunI, k)
+    this.sun.intensity = lerp(DAY.sunI, NIGHT.sunI, k) * (1 - 0.5 * g)
     this.hemi.color.copy(c(DAY.hemiSky, NIGHT.hemiSky))
     this.hemi.groundColor.copy(c(DAY.hemiGround, NIGHT.hemiGround))
-    this.hemi.intensity = lerp(DAY.hemiI, NIGHT.hemiI, k)
+    this.hemi.intensity = lerp(DAY.hemiI, NIGHT.hemiI, k) * (1 - 0.12 * g)
     U.uSunDir.value.copy(SUN_DIR).lerp(MOON_DIR, k).normalize()
     U.uNight.value = k
-    terrainColors.uCaustic.value = lerp(DAY.caustic, NIGHT.caustic, k)
+    terrainColors.uCaustic.value = lerp(DAY.caustic, NIGHT.caustic, k) * (1 - 0.7 * g)
     this.renderer.toneMappingExposure = lerp(DAY.exposure, NIGHT.exposure, k)
     // lanterns, windows and the lighthouse come on
     this.glowMat.color.setRGB(lerp(0.9, 1.6, k), lerp(0.9, 1.45, k), lerp(0.88, 1.2, k))
     this.haloMat.uniforms.uOpacity!.value = k
     this.beamMat.uniforms.uOpacity!.value = k * 0.55
-    for (const cl of this.clouds) cl.mat.emissiveIntensity = lerp(DAY.cloudGlow, NIGHT.cloudGlow, k)
+    for (const cl of this.clouds) {
+      cl.mat.emissiveIntensity = lerp(DAY.cloudGlow, NIGHT.cloudGlow, k) * (1 - 0.8 * g)
+      cl.mat.color.setScalar(1 - 0.4 * g)
+    }
     const beacon = c(DAY.beacon, NIGHT.beacon)
     for (const f of this.bottles.values()) {
       f.mesh.paperMat.emissiveIntensity = k * 0.6
@@ -1577,6 +1789,16 @@ export class SeaEngine {
     this.stepClouds(dt)
     this.stepGulls(dt)
     this.stepFish(dt)
+    this.critterEnv.clock = this.weatherEnv.clock = this.clock
+    this.critterEnv.night = this.weatherEnv.night = this.night
+    this.critters.step(dt)
+    this.weather.step(dt)
+    if (Math.abs(this.weather.gloom - this.gloom) > 0.002) {
+      this.gloom = this.weather.gloom
+      this.applyNight(this.night)
+    }
+    this.sparkles.step(dt)
+    this.stepCaptain(dt)
     this.stepDrops(dt)
     if (this.held) this.stepHeld()
     // beams sweep round; the nearest few light up the water where they land
@@ -1647,6 +1869,11 @@ export class SeaEngine {
       if (k !== 'boost') e.preventDefault()
       return
     }
+    if (e.code === 'KeyH' && this.controls) {
+      e.preventDefault()
+      this.horn()
+      return
+    }
     if (e.code === 'Space' || e.code === 'KeyE') {
       if (this.phase === 'holding') {
         e.preventDefault()
@@ -1692,6 +1919,17 @@ export class SeaEngine {
       }
     }
     return best
+  }
+
+  /** is (x, y) on screen over the boat? */
+  private onBoat(x: number, y: number) {
+    const r = this.canvas.getBoundingClientRect()
+    const w = this.bent(new THREE.Vector3(this.boat.x, this.boat.y + 1.2, this.boat.z))
+    const p = w.project(this.camera)
+    const sx = r.left + ((p.x + 1) / 2) * r.width
+    const sy = r.top + ((1 - p.y) / 2) * r.height
+    const rad = Math.max(24, (1300 / w.distanceTo(this.camera.position)) * (r.height / 800))
+    return Math.hypot(sx - x, sy - y) < rad
   }
 
   /** where the pointer meets the (curved) sea, in flat world coordinates */
@@ -1784,6 +2022,7 @@ export class SeaEngine {
     if (g.moved || !this.controls) return
     // a tap: a bottle within reach is fished out, a far one becomes the course
     const f = this.phase === 'idle' ? this.bottleAt(e.clientX, e.clientY) : null
+    if (!f && this.onBoat(e.clientX, e.clientY)) return void this.horn()
     if (f) {
       const d = Math.hypot(f.x - this.boat.x, f.z - this.boat.z)
       if (d < PICK_DIST + 0.5) return void this.opts.events.pick?.(f.id)

@@ -301,6 +301,165 @@ export class SeaSynth {
     }
   }
 
+  /** the boat's horn: two round, slightly wobbly toots */
+  horn() {
+    const ctx = this.ensure()
+    for (const [at, len, f] of [[0, 0.22, 233], [0.3, 0.42, 220]] as const) {
+      const t = ctx.currentTime + at
+      const lp = ctx.createBiquadFilter()
+      lp.type = 'lowpass'
+      lp.frequency.setValueAtTime(700, t)
+      lp.frequency.linearRampToValueAtTime(1500, t + 0.06)
+      lp.frequency.exponentialRampToValueAtTime(600, t + len)
+      lp.Q.value = 4
+      const g = ctx.createGain()
+      g.gain.setValueAtTime(0, t)
+      g.gain.linearRampToValueAtTime(0.16, t + 0.03)
+      g.gain.setValueAtTime(0.16, t + len - 0.06)
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.08)
+      lp.connect(g).connect(this.out)
+      g.connect(this.fx)
+      // a little vibrato and a squeaky pitch scoop up into each toot
+      const vib = ctx.createOscillator()
+      vib.frequency.value = 7
+      const vibG = ctx.createGain()
+      vibG.gain.value = 4
+      vib.connect(vibG)
+      for (const [type, mult, amp] of [['sawtooth', 1, 0.5], ['square', 1.5, 0.25], ['triangle', 0.5, 0.6]] as const) {
+        const o = ctx.createOscillator()
+        o.type = type
+        o.frequency.setValueAtTime(f * mult * 0.88, t)
+        o.frequency.exponentialRampToValueAtTime(f * mult, t + 0.05)
+        vibG.connect(o.frequency)
+        const og = ctx.createGain()
+        og.gain.value = amp
+        o.connect(og).connect(lp)
+        o.start(t)
+        o.stop(t + len + 0.12)
+      }
+      vib.start(t)
+      vib.stop(t + len + 0.12)
+    }
+  }
+
+  /** a happy little arpeggio: a bottle fished out */
+  tada() {
+    ;[72, 76, 79, 84].forEach((m, i) => this.note(m, i * 0.07, 0.55 - i * 0.05))
+    this.note(88, 0.32, 0.3)
+  }
+
+  /** a soft, rubbery boing for bumping into things */
+  boing() {
+    const ctx = this.ensure()
+    const t = ctx.currentTime
+    const o = ctx.createOscillator()
+    o.type = 'triangle'
+    o.frequency.setValueAtTime(330, t)
+    o.frequency.exponentialRampToValueAtTime(160, t + 0.32)
+    const lfo = ctx.createOscillator()
+    lfo.frequency.value = 16
+    const lg = ctx.createGain()
+    lg.gain.value = 22
+    lfo.connect(lg).connect(o.frequency)
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.015)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.38)
+    o.connect(g).connect(this.out)
+    o.start(t)
+    lfo.start(t)
+    o.stop(t + 0.42)
+    lfo.stop(t + 0.42)
+  }
+
+  /** a tiny blip as an eager bottle hops */
+  hop(vel = 1) {
+    const ctx = this.ensure()
+    const t = ctx.currentTime
+    const o = ctx.createOscillator()
+    o.type = 'sine'
+    o.frequency.setValueAtTime(620, t)
+    o.frequency.exponentialRampToValueAtTime(1100, t + 0.07)
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(0.05 * vel, t + 0.01)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.1)
+    o.connect(g).connect(this.out)
+    o.start(t)
+    o.stop(t + 0.12)
+  }
+
+  /** a far-off whale: a long, low, rising-then-falling call */
+  whale(dist = 1) {
+    const ctx = this.ensure()
+    const t = ctx.currentTime
+    const o = ctx.createOscillator()
+    o.type = 'sine'
+    o.frequency.setValueAtTime(180, t)
+    o.frequency.linearRampToValueAtTime(320, t + 0.9)
+    o.frequency.linearRampToValueAtTime(140, t + 2.2)
+    const o2 = ctx.createOscillator()
+    o2.type = 'triangle'
+    o2.frequency.setValueAtTime(181.5, t)
+    o2.frequency.linearRampToValueAtTime(323, t + 0.9)
+    o2.frequency.linearRampToValueAtTime(141, t + 2.2)
+    const g = ctx.createGain()
+    const v = 0.07 / Math.max(1, dist)
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(v, t + 0.4)
+    g.gain.setValueAtTime(v, t + 1.6)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4)
+    const lp = ctx.createBiquadFilter()
+    lp.type = 'lowpass'
+    lp.frequency.value = 900
+    o.connect(lp)
+    o2.connect(lp)
+    lp.connect(g)
+    g.connect(this.out)
+    g.connect(this.fx)
+    o.start(t)
+    o2.start(t)
+    o.stop(t + 2.5)
+    o2.stop(t + 2.5)
+  }
+
+  /** the spout: a breathy whoosh up */
+  spout() {
+    this.burst(0.7, 'bandpass', 500, 3000, 0.12)
+    this.burst(0.5, 'highpass', 2500, 5000, 0.05, 0.1)
+  }
+
+  /** a shooting star: a soft glissando of high bells */
+  wish() {
+    ;[96, 93, 91, 88, 86].forEach((m, i) => this.note(m, i * 0.06, 0.16))
+  }
+
+  private rainNode?: { gain: GainNode }
+
+  /** gentle rain on the sea: 0 = dry, 1 = a proper shower */
+  rain(level: number) {
+    if (!this.ctx) return
+    if (!this.rainNode) {
+      const ctx = this.ctx
+      const src = ctx.createBufferSource()
+      src.buffer = this.noise!
+      src.loop = true
+      src.playbackRate.value = 0.8
+      const hp = ctx.createBiquadFilter()
+      hp.type = 'highpass'
+      hp.frequency.value = 1400
+      const lp = ctx.createBiquadFilter()
+      lp.type = 'lowpass'
+      lp.frequency.value = 7000
+      const gain = ctx.createGain()
+      gain.gain.value = 0
+      src.connect(hp).connect(lp).connect(gain).connect(this.out)
+      src.start()
+      this.rainNode = { gain }
+    }
+    this.rainNode.gain.gain.setTargetAtTime(level * 0.07, this.ctx.currentTime, 0.4)
+  }
+
   dispose() {
     this.stopSea()
     this.ctx?.close()

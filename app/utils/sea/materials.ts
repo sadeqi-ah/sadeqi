@@ -763,3 +763,109 @@ export function clothMaterial(key: string, billow: THREE.IUniform) {
     `,
   })
 }
+
+// ───────── weather and little lights ─────────
+
+/** fireflies: soft additive points that blink on and off, only at night */
+export function fireflyMaterial(scale: THREE.IUniform) {
+  return new THREE.ShaderMaterial({
+    uniforms: { ...U, uOpacity: { value: 0 }, uScale: scale, uBendOn: { value: 1 } },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexShader: /* glsl */ `
+      ${BEND}
+      uniform float uScale;
+      uniform float uClock;
+      attribute float aPhase;
+      varying float vBlink;
+      void main() {
+        // long glows with short dark gaps, each on its own rhythm
+        float s = sin(uClock * (1.1 + fract(aPhase * 7.3)) + aPhase * 6.283);
+        vBlink = smoothstep(-0.2, 0.7, s);
+        vec4 mv = viewMatrix * bendWorld(modelMatrix * vec4(position, 1.0));
+        gl_PointSize = 0.9 * uScale / -mv.z * (0.6 + 0.4 * vBlink);
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform float uOpacity;
+      varying float vBlink;
+      void main() {
+        float d = length(gl_PointCoord - 0.5) * 2.0;
+        float core = smoothstep(0.35, 0.0, d);
+        float glow = pow(max(1.0 - d, 0.0), 2.5);
+        vec3 col = vec3(0.85, 1.0, 0.45) * glow * 0.9 + vec3(1.0, 1.0, 0.8) * core;
+        gl_FragColor = vec4(col * vBlink * uOpacity, 1.0);
+        #include <colorspace_fragment>
+      }
+    `,
+  })
+}
+
+/** a rainbow: soft bands across a half ring, fading into the sea at its feet */
+export function rainbowMaterial(inner: number, outer: number) {
+  return new THREE.ShaderMaterial({
+    uniforms: { ...U, uOpacity: { value: 0 }, uInner: { value: inner }, uOuter: { value: outer }, uBendOn: { value: 1 } },
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    vertexShader: /* glsl */ `
+      ${BEND}
+      varying vec2 vLocal;
+      void main() {
+        vLocal = position.xy;
+        gl_Position = projectionMatrix * viewMatrix * bendWorld(modelMatrix * vec4(position, 1.0));
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform float uOpacity;
+      uniform float uInner;
+      uniform float uOuter;
+      varying vec2 vLocal;
+      vec3 band(float t) {
+        // red outside, violet inside, as it should be
+        vec3 c = vec3(0.58, 0.45, 1.0);
+        c = mix(c, vec3(0.35, 0.62, 1.0), smoothstep(0.08, 0.24, t));
+        c = mix(c, vec3(0.38, 0.92, 0.62), smoothstep(0.26, 0.42, t));
+        c = mix(c, vec3(1.0, 0.94, 0.42), smoothstep(0.44, 0.6, t));
+        c = mix(c, vec3(1.0, 0.68, 0.36), smoothstep(0.62, 0.76, t));
+        c = mix(c, vec3(1.0, 0.45, 0.5), smoothstep(0.78, 0.92, t));
+        return c;
+      }
+      void main() {
+        float t = (length(vLocal) - uInner) / (uOuter - uInner);
+        float edge = smoothstep(0.0, 0.14, t) * smoothstep(1.0, 0.86, t);
+        float feet = smoothstep(0.0, 0.45, vLocal.y / uOuter);
+        gl_FragColor = vec4(band(t), edge * feet * uOpacity);
+        #include <colorspace_fragment>
+      }
+    `,
+  })
+}
+
+/** a shooting star's streak: bright head, a tail fading out behind (uv.x 0 tail → 1 head) */
+export function streakMaterial() {
+  return new THREE.ShaderMaterial({
+    uniforms: { uOpacity: { value: 0 } },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexShader: /* glsl */ `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform float uOpacity;
+      varying vec2 vUv;
+      void main() {
+        float across = 1.0 - abs(vUv.y - 0.5) * 2.0;
+        float a = pow(vUv.x, 2.2) * pow(across, 1.5 + (1.0 - vUv.x) * 4.0);
+        gl_FragColor = vec4(vec3(1.0, 0.97, 0.85) * a * uOpacity * 1.6, 1.0);
+      }
+    `,
+  })
+}

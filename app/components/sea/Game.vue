@@ -276,8 +276,8 @@ onBeforeUnmount(() => {
 })
 
 const hint = computed(() => touch.value
-  ? 'Tap the sea to sail · drag to steer · follow the beams of light'
-  : 'WASD or arrows to sail · click the sea to set a course · follow the beams of light')
+  ? 'Tap the sea to sail · drag to steer · tap your boat to honk'
+  : 'WASD or arrows to sail · click the sea to set a course · H to honk')
 </script>
 
 <template>
