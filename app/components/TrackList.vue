@@ -181,7 +181,7 @@ const time = (ms: number) => {
   border-radius: 4px;
   overflow: hidden;
   background: var(--surface);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  box-shadow: inset 0 0 0 1px var(--hairline);
   -webkit-mask: radial-gradient(circle, transparent var(--hole), #000 calc(var(--hole) + 0.5px));
   mask: radial-gradient(circle, transparent var(--hole), #000 calc(var(--hole) + 0.5px));
   transition: border-radius 0.4s var(--ease-out);

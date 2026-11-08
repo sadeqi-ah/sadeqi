@@ -51,7 +51,7 @@ const monogram = computed(() => props.title.split(/[\s-]+/).filter(Boolean).slic
   border-radius: 7px;
   overflow: hidden;
   background: var(--surface);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  box-shadow: inset 0 0 0 1px var(--hairline);
   transition: transform 0.45s var(--ease-spring);
 }
 .icon img { width: 100%; height: 100%; object-fit: cover; display: block; }

@@ -55,9 +55,9 @@ function onLeave() {
   overflow: hidden;
   background: var(--surface);
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.06),
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 12px 28px -14px rgba(60, 40, 10, 0.45);
+    0 0 0 1px var(--hairline),
+    0 1px 2px var(--hairline),
+    0 12px 28px -14px var(--shadow);
   transform: rotate(2.5deg) rotateX(var(--rx)) rotateY(var(--ry));
   transition: transform 0.7s var(--ease-spring), box-shadow 0.4s var(--ease-out);
   will-change: transform;
@@ -66,9 +66,9 @@ function onLeave() {
   transform: rotate(0deg) rotateX(var(--rx)) rotateY(var(--ry)) scale(1.04);
   transition: transform 0.25s var(--ease-out), box-shadow 0.4s var(--ease-out);
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.06),
-    0 2px 4px rgba(0, 0, 0, 0.06),
-    0 22px 40px -16px rgba(60, 40, 10, 0.55);
+    0 0 0 1px var(--hairline),
+    0 2px 4px var(--hairline),
+    0 22px 40px -16px var(--shadow);
 }
 
 /* the lens: zoomed in a touch, settles to rest as focus lands */

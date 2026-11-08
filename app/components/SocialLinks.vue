@@ -58,7 +58,7 @@ const items = computed(() =>
     background 0.2s var(--ease-out);
 }
 .social img { transition: transform 0.35s var(--ease-spring); }
-.social:hover { border-color: #d6d3d1; background: var(--surface); transform: translateY(-2px); }
+.social:hover { border-color: var(--border-strong); background: var(--surface); transform: translateY(-2px); }
 .social:hover img { transform: scale(1.08) rotate(-6deg); }
 .social:active { transform: translateY(0) scale(0.94); }
 </style>

@@ -47,7 +47,7 @@ defineProps<{
   place-items: center;
   transition: box-shadow 0.5s var(--ease-out), border-color 0.3s;
 }
-.card:hover .thumb { box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.18); border-color: #dcd9d6; }
+.card:hover .thumb { box-shadow: 0 18px 40px -20px var(--shadow); border-color: var(--border-strong); }
 .shot { width: 100%; height: 100%; object-fit: cover; transition: transform 0.9s var(--ease-out); }
 .card:hover .shot { transform: scale(1.03); }
 .topology {
@@ -65,7 +65,7 @@ defineProps<{
   height: 6px;
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
   offset-path: path('M40 80 L120 80 L190 30 L260 80 L190 130 L120 80 L40 80');
   offset-rotate: 0deg;
   offset-anchor: center;

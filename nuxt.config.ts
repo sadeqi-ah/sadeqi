@@ -1,4 +1,4 @@
-import paperTheme from './shiki-theme'
+import paperTheme, { paperDark } from './shiki-theme'
 
 // Load gate. Runs in <head> before first paint: marks the page as JS-driven
 // (so CSS can hold load animations and show the loader) and defines
@@ -9,6 +9,10 @@ import paperTheme from './shiki-theme'
 // after 4s, so a failed bundle can't leave the page covered.
 // Without JS there is no `js` class: no loader, CSS animates as usual.
 const APP_READY = `(function(){var d=document.documentElement;d.classList.add('js');window.__appReady=function(){if(d.classList.contains('ready'))return;d.classList.add('ready');window.dispatchEvent(new Event('app:ready'))};window.__appHydrated=function(){window.__hydrated=true;window.dispatchEvent(new Event('app:hydrated'))};setTimeout(function(){if(window.__hydrated)return;var l=document.querySelector('.site-loader');if(l)l.style.display='none';var t=document.querySelector('[data-signature-target]');if(t)t.setAttribute('data-landed','');window.__appReady()},4000)})()`
+
+// Theme, before first paint so there's no flash: the saved choice, else the
+// OS preference. Keep in sync with app/composables/useTheme.ts.
+const THEME = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';var d=document.documentElement;d.classList.toggle('dark',t==='dark');var m=document.querySelector('meta[name=theme-color]');if(m)m.content=t==='dark'?'#0e0d0c':'#fafaf9'}catch(e){}})()`
 
 // Watch [data-reveal] elements as soon as the HTML is parsed, without waiting
 // for hydration, and reveal the ones in view the moment the page is ready.
@@ -35,6 +39,7 @@ export default defineNuxtConfig({
         { name: 'theme-color', content: '#fafaf9' },
       ],
       script: [
+        { innerHTML: THEME, tagPosition: 'head' },
         { innerHTML: APP_READY, tagPosition: 'head' },
         { innerHTML: REVEAL_EARLY, tagPosition: 'bodyClose' },
       ],
@@ -65,7 +70,7 @@ export default defineNuxtConfig({
     build: {
       markdown: {
         highlight: {
-          theme: { default: paperTheme },
+          theme: { default: paperTheme, dark: paperDark },
           langs: ['yaml', 'bash', 'shell', 'python', 'ts', 'js', 'rust', 'json', 'toml', 'diff'],
         },
       },

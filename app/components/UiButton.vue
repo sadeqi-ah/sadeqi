@@ -42,9 +42,9 @@ defineProps<{
 .icon { display: inline-block; transition: transform 0.35s var(--ease-spring); }
 .secondary { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
 .secondary .icon { color: var(--muted); }
-.secondary:hover { border-color: #d6d3d1; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+.secondary:hover { border-color: var(--border-strong); box-shadow: 0 2px 8px var(--shadow-soft); }
 .primary { background: var(--text); color: var(--bg); border: 1px solid var(--text); }
-.primary:hover { background: #262626; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15); }
+.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); box-shadow: 0 4px 14px var(--shadow-soft); }
 .btn:hover { transform: translateY(-1px); }
 .btn:hover .icon { transform: translate(2px, -2px); }
 .btn:active { transform: translateY(0) scale(0.97); }

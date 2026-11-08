@@ -112,7 +112,7 @@ useSeoMeta({ title: 'Writing — Amir Hossein Sadeghi', description: 'Notes from
   cursor: text;
   transition: border-color 0.2s, box-shadow 0.3s var(--ease-out);
 }
-.search:focus-within { border-color: #d6d3d1; box-shadow: 0 0 0 4px var(--surface); }
+.search:focus-within { border-color: var(--border-strong); box-shadow: 0 0 0 4px var(--surface); }
 .search input {
   flex: 1 0 0;
   min-width: 0;
@@ -138,7 +138,7 @@ useSeoMeta({ title: 'Writing — Amir Hossein Sadeghi', description: 'Notes from
   transition: transform 0.5s var(--ease-out), box-shadow 0.5s var(--ease-out), opacity 0.4s;
 }
 .featured :deep(.chip) { background: var(--surface); padding-left: 0; }
-.featured:hover { transform: translateY(-2px); box-shadow: 0 16px 36px -20px rgba(0, 0, 0, 0.25); }
+.featured:hover { transform: translateY(-2px); box-shadow: 0 16px 36px -20px var(--shadow); }
 .featured-title { font-family: var(--font-serif); font-weight: 400; font-size: 26px; line-height: 1.2; }
 .featured-desc { font-size: 15px; line-height: 1.65; color: var(--muted); }
 .featured-meta { font-family: var(--font-mono); font-size: 12px; white-space: pre; }

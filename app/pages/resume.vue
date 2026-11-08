@@ -199,7 +199,7 @@ useSeoMeta({ title: 'Resume — Amir Hossein Sadeghi', description: 'Network & S
   width: 75px;
   border-radius: 8px;
   background: var(--bg);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px var(--shadow-soft);
   transition: transform 0.5s var(--ease-spring), width 0.5s var(--ease-spring);
 }
 

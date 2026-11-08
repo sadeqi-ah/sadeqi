@@ -1,6 +1,13 @@
 <script setup lang="ts">
 const route = useRoute()
 const palette = usePalette()
+const { theme, toggle: toggleTheme } = useTheme()
+
+function onTheme(e: MouseEvent) {
+  // grow the reveal from the button's centre (also right for keyboard clicks)
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  toggleTheme({ x: r.left + r.width / 2, y: r.top + r.height / 2 })
+}
 
 const links = [
   { to: '/', label: 'home' },
@@ -89,6 +96,26 @@ const blobStyle = computed(() => ({
       <button class="kbd" type="button" aria-label="Open command menu" @click="palette = true">
         ctrl k
       </button>
+      <button
+        class="theme"
+        :class="{ dark: theme === 'dark' }"
+        type="button"
+        :aria-label="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+        @click="onTheme"
+      >
+        <!-- sun ⇄ moon: the disc grows and a second disc slides in to bite it,
+             while the rays draw back in -->
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <mask id="moon-bite">
+            <rect width="24" height="24" fill="#fff" />
+            <circle class="bite" cx="24" cy="2" r="8" fill="#000" />
+          </mask>
+          <circle class="disc" cx="12" cy="12" r="5" mask="url(#moon-bite)" />
+          <g class="rays">
+            <path d="M12 1.5v2M12 20.5v2M22.5 12h-2M3.5 12h-2M19.4 4.6l-1.4 1.4M6 18l-1.4 1.4M19.4 19.4L18 18M6 6L4.6 4.6" />
+          </g>
+        </svg>
+      </button>
     </nav>
   </div>
 </template>
@@ -107,8 +134,6 @@ const blobStyle = computed(() => ({
   align-items: center;
   gap: 2px;
   padding: 4px;
-  background: var(--bg);
-  border: 1px solid var(--border);
   border-radius: 999px;
   will-change: transform;
   animation: nav-in 0.7s var(--ease-out) both;
@@ -148,9 +173,39 @@ const blobStyle = computed(() => ({
   transition: color 0.2s, background 0.2s;
 }
 .kbd:hover { color: var(--text); background: var(--border); }
+/* breathing room between the links and the tools */
+.kbd { margin-left: 14px; }
+
+.theme {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 4px;
+  border-radius: 999px;
+  color: var(--muted);
+  transition: color 0.2s, background 0.2s, transform 0.3s var(--ease-spring);
+}
+.theme:hover { color: var(--text); background: var(--surface); }
+.theme:active { transform: scale(0.9); }
+.theme svg { overflow: visible; }
+.disc { fill: currentColor; transition: r 0.5s var(--ease-spring); }
+.bite { transition: cx 0.5s var(--ease-out), cy 0.5s var(--ease-out); }
+.rays {
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  transform-origin: 12px 12px;
+  transition: transform 0.5s var(--ease-spring), opacity 0.3s var(--ease-out);
+}
+.theme.dark .disc { r: 8px; }
+.theme.dark .bite { cx: 17px; cy: 7px; }
+.theme.dark .rays { transform: rotate(-45deg) scale(0.4); opacity: 0; }
 
 @media (max-width: 420px) {
   .kbd { display: none; }
+  .theme { margin-left: 2px; }
   .link { padding: 5px 8px; font-size: 13px; }
 }
 </style>

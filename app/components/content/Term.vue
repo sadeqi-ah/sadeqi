@@ -85,7 +85,7 @@ const iconStyle = computed(() => props.icon ? { maskImage: `url(/svg/tech/${prop
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px var(--shadow-soft);
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.4;

@@ -43,8 +43,8 @@ const initials = (t: string) => t.split(/\s+/).filter(w => /\w/.test(w)).slice(0
   overflow: hidden;
   background: var(--surface);
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.06),
-    0 8px 20px -12px rgba(40, 30, 10, 0.35);
+    0 0 0 1px var(--hairline),
+    0 8px 20px -12px var(--shadow);
   transition: transform 0.45s var(--ease-spring), box-shadow 0.35s var(--ease-out);
 }
 .poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -74,8 +74,8 @@ const initials = (t: string) => t.split(/\s+/).filter(w => /\w/.test(w)).slice(0
 .card:hover .poster {
   transform: translateY(-3px) rotate(-1deg);
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.06),
-    0 16px 28px -14px rgba(40, 30, 10, 0.45);
+    0 0 0 1px var(--hairline),
+    0 16px 28px -14px var(--shadow);
 }
 .caption { display: flex; flex-direction: column; gap: 1px; min-width: 0; line-height: 1.3; }
 .title { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
