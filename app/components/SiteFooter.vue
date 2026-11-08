@@ -8,7 +8,10 @@
     </div>
     <div class="meta">
       <p>© {{ new Date().getFullYear() }} Amir Hossein Sadeghi</p>
-      <a href="/rss.xml" class="rss">rss</a>
+      <span class="links">
+        <NuxtLink to="/guestbook" class="rss">leave a note</NuxtLink>
+        <a href="/rss.xml" class="rss">rss</a>
+      </span>
     </div>
   </footer>
 </template>
@@ -29,6 +32,7 @@
   font-size: 12px;
   color: var(--muted);
 }
+.links { display: flex; gap: 14px; }
 .rss { transition: color 0.2s; }
 .rss:hover { color: var(--text); }
 </style>

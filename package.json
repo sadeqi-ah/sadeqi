@@ -14,9 +14,11 @@
     "@nuxt/fonts": "^1.2.0",
     "@vueuse/core": "^15.0.0",
     "@vueuse/nuxt": "^15.0.0",
-    "nuxt": "^4.6.4"
+    "nuxt": "^4.6.4",
+    "three": "^0.187.0"
   },
   "devDependencies": {
-    "@iconify-json/simple-icons": "^1.2.101"
+    "@iconify-json/simple-icons": "^1.2.101",
+    "@types/three": "^0.187.0"
   }
 }

@@ -53,6 +53,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // optional: TMDB key for film/series posters (server/api/favourites); set NUXT_TMDB_KEY
     tmdbKey: '',
+    // guestbook: hold new bottles until approved; set NUXT_BOTTLES_MODERATE=true
+    bottlesModerate: false,
   },
 
   fonts: {
@@ -78,6 +80,11 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    // guestbook bottles (server/utils/bottleStore.ts). A folder on disk;
+    // point it at KV / Redis / etc. for a serverless deploy.
+    storage: {
+      bottles: { driver: 'fs', base: './.data/bottles' },
+    },
     prerender: {
       crawlLinks: true,
       routes: ['/', '/rss.xml'],

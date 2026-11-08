@@ -19,6 +19,7 @@ const pages: Item[] = [
   { label: 'Resume', hint: '~/resume', to: '/resume', group: 'pages' },
   { label: 'Favourite music', hint: '~/music', to: '/music', group: 'pages' },
   { label: 'Films & series', hint: '~/films', to: '/films', group: 'pages' },
+  { label: 'Guestbook — message in a bottle', hint: '~/guestbook', to: '/guestbook', group: 'pages' },
   { label: 'RSS feed', hint: '/rss.xml', to: '/rss.xml', group: 'pages' },
 ]
 
