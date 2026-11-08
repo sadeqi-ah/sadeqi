@@ -1,0 +1,12 @@
+updated: Nov 2026
+items:
+  - title: Consensus protocol simulations
+    meta: research · python
+    progress: 70
+    active: true
+  - title: VLAN + OSPF homelab
+    meta: lab
+    progress: 40
+  - title: This website
+    meta: nuxt
+    progress: 20

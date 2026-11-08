@@ -1,3 +1,5 @@
+import paperTheme from './shiki-theme'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2026-11-01',
@@ -37,7 +39,7 @@ export default defineNuxtConfig({
     build: {
       markdown: {
         highlight: {
-          theme: 'github-light',
+          theme: { default: paperTheme },
           langs: ['yaml', 'bash', 'shell', 'python', 'ts', 'js', 'rust', 'json', 'toml', 'diff'],
         },
       },
