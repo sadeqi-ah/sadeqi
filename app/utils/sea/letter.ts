@@ -25,6 +25,77 @@ export const LETTER = {
 
 export const FOOTER_H = LETTER.cell * MELODY_SCALE.length
 
+/** the music-box strip in the footer and the crank beside it (SeaMelody.vue) */
+export const STRIP = {
+  bg: '#ece2cb',
+  edge: 'rgba(120, 96, 70, 0.22)',
+  line: 'rgba(120, 96, 70, 0.2)',
+  hole: '#3a322a',
+  /** gap between strip and crank, the crank's box, its drum radius, knob y */
+  crankGap: 9,
+  crank: 22,
+  drum: 6.5,
+  knob: 4,
+} as const
+
+/** the strip, its punched holes and the crank, at rest */
+function drawStrip(ctx: CanvasRenderingContext2D, melody: number[], x: number, y: number) {
+  const { cell, ink } = LETTER
+  const w = cell * MELODY_STEPS
+  const h = FOOTER_H
+  ctx.fillStyle = STRIP.edge
+  ctx.beginPath()
+  ctx.roundRect(x - 3.5, y - 3.5, w + 7, h + 7, 5)
+  ctx.fill()
+  ctx.fillStyle = STRIP.bg
+  ctx.beginPath()
+  ctx.roundRect(x - 3, y - 3, w + 6, h + 6, 4.5)
+  ctx.fill()
+  ctx.fillStyle = STRIP.line
+  for (let r = 0; r < MELODY_SCALE.length; r++) ctx.fillRect(x, y + cell * r + cell / 2 - 0.5, w, 1)
+  for (let s = 0; s < MELODY_STEPS; s++) {
+    const r = melody[s]!
+    if (r < 0) continue
+    const cx = x + cell * s + cell / 2
+    const cy = y + cell * (MELODY_SCALE.length - 1 - r) + cell / 2
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)'
+    ctx.beginPath()
+    ctx.roundRect(cx - 3.5, cy - 1.5, 7, 5, 1.5)
+    ctx.fill()
+    ctx.fillStyle = STRIP.hole
+    ctx.beginPath()
+    ctx.roundRect(cx - 3.5, cy - 2.5, 7, 5, 1.5)
+    ctx.fill()
+  }
+  // crank
+  const c = STRIP.crank / 2
+  const ox = x + w + STRIP.crankGap
+  const oy = y + h / 2 - c
+  ctx.lineWidth = 1.1
+  ctx.strokeStyle = ink
+  ctx.fillStyle = '#d8c49b'
+  ctx.beginPath()
+  ctx.arc(ox + c, oy + c, STRIP.drum, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.lineWidth = 1.6
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(ox + c, oy + c)
+  ctx.lineTo(ox + c, oy + STRIP.knob + 0.5)
+  ctx.stroke()
+  ctx.lineWidth = 1
+  ctx.fillStyle = '#b5562f'
+  ctx.beginPath()
+  ctx.arc(ox + c, oy + STRIP.knob, 2.4, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = ink
+  ctx.beginPath()
+  ctx.arc(ox + c, oy + c, 1.3, 0, Math.PI * 2)
+  ctx.fill()
+}
+
 const RTL = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/
 
 export function isRtl(text: string) {
@@ -63,7 +134,7 @@ export function drawLetter(note: BottleDraft & { createdAt?: string }, w: number
   c.height = Math.round(h * dpr)
   const ctx = c.getContext('2d')!
   ctx.scale(dpr, dpr)
-  const { pad, textTop, line, font, cell } = LETTER
+  const { pad, textTop, line, font } = LETTER
 
   // paper, a little darker towards the edges, with grain
   ctx.fillStyle = LETTER.paper
@@ -109,20 +180,10 @@ export function drawLetter(note: BottleDraft & { createdAt?: string }, w: number
     if (y < textBottom) ctx.fillText(l, rtl ? w - pad : pad, y)
   })
 
-  // the tune: a dot grid, notes filled in
+  // the tune: a music-box strip
   ctx.direction = 'ltr'
   ctx.textAlign = 'left'
-  if (note.melody?.some(s => s >= 0)) {
-    for (let s = 0; s < MELODY_STEPS; s++) {
-      for (let r = 0; r < MELODY_SCALE.length; r++) {
-        const on = note.melody[s] === r
-        ctx.fillStyle = on ? LETTER.ink : 'rgba(42, 38, 34, 0.18)'
-        ctx.beginPath()
-        ctx.arc(pad + cell * s + cell / 2, footerTop + cell * (MELODY_SCALE.length - 1 - r) + cell / 2, on ? 3.5 : 1.2, 0, Math.PI * 2)
-        ctx.fill()
-      }
-    }
-  }
+  if (note.melody?.some(s => s >= 0)) drawStrip(ctx, note.melody, pad, footerTop)
 
   // signature
   const sig = `— ${note.name?.trim() || 'a stranger'}`

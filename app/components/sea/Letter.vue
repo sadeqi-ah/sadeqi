@@ -71,6 +71,7 @@ const vars = {
           :editable="mode === 'write'"
           :playing="playing"
           @note="emit('note', $event)"
+          @crank="emit('play')"
         />
         <span v-else />
         <label v-if="mode === 'write'" class="sig">
@@ -95,8 +96,8 @@ const vars = {
       <template v-if="mode === 'write'">
         <span class="meta mono" :class="{ warn: left < 40 }">
           <template v-if="error">{{ error }}</template>
-          <template v-else-if="hasNotes(draft.melody)">♪ tune added · {{ left }}</template>
-          <template v-else>tap the dots for a tune · {{ left }}</template>
+          <template v-else-if="hasNotes(draft.melody)">♪ turn the crank to hear it · {{ left }}</template>
+          <template v-else>punch a tune into the strip · {{ left }}</template>
         </span>
         <UiButton label="Cancel" @click="emit('cancel')" />
         <UiButton
@@ -108,7 +109,7 @@ const vars = {
       </template>
       <template v-else>
         <span class="meta mono">from the sea</span>
-        <UiButton v-if="hasNotes(note?.melody)" :label="playing !== undefined && playing >= 0 ? 'Playing…' : 'Play the tune'" icon="♪" @click="emit('play')" />
+        <UiButton v-if="hasNotes(note?.melody)" :label="playing !== undefined && playing >= 0 ? 'Stop' : 'Play the tune'" icon="♪" @click="emit('play')" />
         <UiButton variant="primary" label="Throw it back" @click="emit('close')" />
       </template>
     </div>

@@ -1,9 +1,10 @@
 /**
  * Every sound on /guestbook, synthesised with Web Audio — no audio files.
  *
- *  - notes: a glassy bell (sine partials at the inharmonic ratios of a
- *    struck glass) into a soft feedback delay, so a melody rings like it's
- *    being played on the bottle itself
+ *  - the letter's tune: a music box (plucked steel tines over a rolled
+ *    chord bed, swung a little) into a soft feedback delay
+ *  - chimes and little fx: a glassy bell (sine partials at the inharmonic
+ *    ratios of a struck glass)
  *  - splash, cork pop, clink: shaped noise and pitch drops
  *  - the sea: brown noise through a lowpass whose cutoff swells and recedes
  *
@@ -13,6 +14,9 @@
 import { MELODY_SCALE, type MelodyStep } from '#shared/utils/bottles'
 
 const midiHz = (m: number) => 440 * 2 ** ((m - 69) / 12)
+
+/** the music box plays the melody grid an octave below MELODY_SCALE */
+const MUSIC_BOX_SHIFT = -12
 
 export class SeaSynth {
   private ctx?: AudioContext
@@ -88,18 +92,90 @@ export class SeaSynth {
   }
 
   /**
-   * Plays a melody once. `onStep(i)` fires as each step sounds (-1 at the end),
-   * for the grid to light up in time. Returns a function that stops it.
+   * One music-box tine: a steel tooth plucked by a pin. A sine fundamental
+   * with a slightly detuned twin (the shimmer of a real comb), the tine's
+   * inharmonic overtones (~5.4× and ~13×) that die almost at once, and a tiny
+   * metallic tick of the pin. `dest` lets a melody run on its own bus so it
+   * can be faded out mid-ring.
    */
-  play(melody: MelodyStep[], onStep?: (i: number) => void, stepSec = 0.19) {
-    this.ensure()
+  tine(midi: number, when = 0, vel = 1, dest?: AudioNode) {
+    const ctx = this.ensure()
+    const t = ctx.currentTime + when
+    const f = midiHz(midi)
+    // low tines ring longer, high ones are short and bright
+    const ring = 2.6 - Math.min(1.4, Math.max(0, (midi - 55) / 20))
+    const env = ctx.createGain()
+    env.gain.setValueAtTime(0, t)
+    env.gain.linearRampToValueAtTime(0.2 * vel, t + 0.003)
+    env.gain.exponentialRampToValueAtTime(0.0001, t + ring)
+    const out = dest ?? this.out
+    env.connect(out)
+    const send = this.ctx!.createGain()
+    send.gain.value = 0.5
+    env.connect(send).connect(this.fx)
+    for (const [ratio, amp, decay] of [[1, 1, ring], [1.0035, 0.35, ring], [5.4, 0.14, 0.12], [13.2, 0.05, 0.04]] as const) {
+      const o = ctx.createOscillator()
+      o.frequency.value = f * ratio
+      const g = ctx.createGain()
+      g.gain.setValueAtTime(amp, t)
+      g.gain.exponentialRampToValueAtTime(0.0001, t + decay)
+      o.connect(g).connect(env)
+      o.start(t)
+      o.stop(t + decay + 0.05)
+    }
+    // the pin's tick
+    const src = ctx.createBufferSource()
+    src.buffer = this.noise!
+    const hp = ctx.createBiquadFilter()
+    hp.type = 'highpass'
+    hp.frequency.value = 6000
+    const tg = ctx.createGain()
+    tg.gain.setValueAtTime(0.05 * vel, t)
+    tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.012)
+    src.connect(hp).connect(tg).connect(out)
+    src.start(t, Math.random())
+    src.stop(t + 0.03)
+  }
+
+  /** a single tine for a row of the melody grid (while composing) */
+  melodyNote(row: number) {
+    this.tine(MELODY_SCALE[row]! + MUSIC_BOX_SHIFT, 0, 0.9)
+  }
+
+  /**
+   * Plays a melody once on the music box. The tune sits an octave down from
+   * the grid's nominal pitch, swung a little, over a rolled chord bed —
+   * C for the first bar, A minor for the second, then back home to C — so
+   * any pentatonic doodle sounds like a tune. `onStep(i)` fires as each step
+   * sounds (-1 at the end). Returns a function that stops it and fades out
+   * whatever is still ringing.
+   */
+  play(melody: MelodyStep[], onStep?: (i: number) => void, stepSec = 0.26) {
+    const ctx = this.ensure()
+    const bus = ctx.createGain()
+    bus.connect(this.out)
     const timers: number[] = []
+    const lead = 0.08
+    const swing = stepSec * 0.16
+    const at = (i: number) => lead + i * stepSec + (i % 2 ? swing : 0)
+
+    const chords = [[48, 55, 64], [45, 52, 60]] as const
+    const bar = melody.length / 2
+    chords.forEach((c, b) => c.forEach((m, k) => this.tine(m, at(b * bar) + k * 0.03, 0.34 - k * 0.05, bus)))
+    // the final chord, a beat after the last step
+    const end = at(melody.length)
+    ;[48, 55, 60, 64].forEach((m, k) => this.tine(m, end + k * 0.045, 0.3 - k * 0.04, bus))
+
     melody.forEach((s, i) => {
-      if (s >= 0) this.note(MELODY_SCALE[s]!, 0.05 + i * stepSec, 0.85 + (i % 2 ? 0 : 0.15))
-      timers.push(window.setTimeout(() => onStep?.(i), (0.05 + i * stepSec) * 1000))
+      if (s >= 0) this.tine(MELODY_SCALE[s]! + MUSIC_BOX_SHIFT, at(i), i % 4 === 0 ? 1 : i % 2 ? 0.78 : 0.9, bus)
+      timers.push(window.setTimeout(() => onStep?.(i), at(i) * 1000))
     })
-    timers.push(window.setTimeout(() => onStep?.(-1), (0.05 + melody.length * stepSec) * 1000))
-    return () => timers.forEach(clearTimeout)
+    timers.push(window.setTimeout(() => onStep?.(-1), end * 1000))
+    return () => {
+      timers.forEach(clearTimeout)
+      bus.gain.setTargetAtTime(0, ctx.currentTime, 0.06)
+      setTimeout(() => bus.disconnect(), 600)
+    }
   }
 
   private burst(dur: number, filter: BiquadFilterType, from: number, to: number, gain: number, when = 0) {

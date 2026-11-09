@@ -11,7 +11,7 @@
  * three.js is imported only here, after mount. Without WebGL the letters
  * still work (`flat`: a plain list and the same writing desk).
  */
-import { MELODY_SCALE, MELODY_STEPS, hasNotes, type Bottle } from '#shared/utils/bottles'
+import { MELODY_STEPS, hasNotes, type Bottle } from '#shared/utils/bottles'
 import { drawLetter, isRtl } from '~/utils/sea/letter'
 import type { SeaEngine } from '~/utils/sea/engine'
 import { SeaSynth } from '~/utils/sea/synth'
@@ -104,13 +104,21 @@ async function startWriting() {
   letterRef.value?.focus()
 }
 
+function stopPlaying() {
+  stopTune?.()
+  stopTune = undefined
+  playing.value = undefined
+}
+
 function cancelWriting() {
+  stopPlaying()
   mode.value = 'sea'
   engine?.setControls(true)
 }
 
 async function seal() {
   if (busy.value || draft.value.message.trim().length < 2) return
+  stopPlaying()
   busy.value = true
   error.value = ''
   let bottle: Bottle
@@ -178,18 +186,19 @@ async function open(id: string) {
   if (hasNotes(b.melody)) setTimeout(play, 350)
 }
 
+/** plays the open letter's tune — or, while writing, the draft's (the crank) */
 function play() {
-  const m = reading.value?.melody
-  if (!m) return
+  const m = letterMode.value === 'write' ? draft.value.melody : reading.value?.melody
+  if (!hasNotes(m)) return
+  if (playing.value !== undefined) return stopPlaying()
   stopTune?.()
-  stopTune = synth.play(m, (i) => { playing.value = i < 0 ? undefined : i })
+  stopTune = synth.play(m!, (i) => { playing.value = i < 0 ? undefined : i })
 }
 
 async function close() {
   if (mode.value === 'write') return cancelWriting()
   if (mode.value !== 'read') return
-  stopTune?.()
-  playing.value = undefined
+  stopPlaying()
   if (!engine) {
     reading.value = undefined
     mode.value = 'sea'
@@ -371,7 +380,7 @@ const hint = computed(() => touch.value
           @cancel="close"
           @close="close"
           @play="play"
-          @note="r => synth.note(MELODY_SCALE[r]!)"
+          @note="r => synth.melodyNote(r)"
         />
       </Transition>
     </div>
