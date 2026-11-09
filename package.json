@@ -7,9 +7,13 @@
     "build": "nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "build:cf": "NITRO_PRESET=cloudflare_pages nuxt build",
+    "deploy": "pnpm build:cf && wrangler pages deploy dist"
   },
   "dependencies": {
+    "@hugeicons/core-free-icons": "^4.4.0",
+    "@hugeicons/vue": "^1.0.8",
     "@nuxt/content": "^3.16.2",
     "@nuxt/fonts": "^1.2.0",
     "@vueuse/core": "^15.0.0",
@@ -19,6 +23,7 @@
   },
   "devDependencies": {
     "@iconify-json/simple-icons": "^1.2.101",
-    "@types/three": "^0.187.0"
+    "@types/three": "^0.187.0",
+    "wrangler": "^4.158.0"
   }
 }

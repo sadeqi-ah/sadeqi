@@ -1,0 +1,18 @@
+# Cloudflare Pages config. Create the two resources once, paste their ids below:
+#   pnpm dlx wrangler kv namespace create BOTTLES
+#   pnpm dlx wrangler d1 create sadeqi-content
+name = "sadeqi"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+# guestbook bottles
+[[kv_namespaces]]
+binding = "BOTTLES"
+id = "6ded77c08f6446b3a81d0ff6e7fd6df0"
+
+# @nuxt/content database (binding name must be DB)
+[[d1_databases]]
+binding = "DB"
+database_name = "sadeqi-content"
+database_id = "deae1f76-dd66-4f3e-b512-f7d63ba1befd"

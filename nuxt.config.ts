@@ -19,6 +19,9 @@ const THEME = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light
 // Options must match REVEAL_OPTIONS in app/plugins/reveal.ts.
 const REVEAL_EARLY = `(function(){if(!('IntersectionObserver' in window))return;var d=document.documentElement;var q=[];function mark(el){el.setAttribute('data-revealed','')}window.addEventListener('app:ready',function(){q.forEach(mark);q=[]});var io=new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)return;io.unobserve(e.target);if(d.classList.contains('ready'))mark(e.target);else q.push(e.target)})},{rootMargin:'0px 0px -8% 0px',threshold:0.08});document.querySelectorAll('[data-reveal]').forEach(function(el){io.observe(el)})})()`
 
+// Cloudflare Pages sets CF_PAGES during its build; NITRO_PRESET covers local builds
+const isCloudflare = !!process.env.CF_PAGES || /cloudflare/.test(process.env.NITRO_PRESET ?? '')
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2026-11-01',
@@ -80,9 +83,15 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    // guestbook bottles (server/utils/bottleStore.ts). A folder on disk;
-    // point it at KV / Redis / etc. for a serverless deploy.
+    // guestbook bottles (server/utils/bottleStore.ts). A folder on disk for
+    // local dev and the Node server; a Cloudflare KV namespace (binding
+    // BOTTLES, see wrangler.toml) when building for Cloudflare.
     storage: {
+      bottles: isCloudflare
+        ? { driver: 'cloudflare-kv-binding', binding: 'BOTTLES' }
+        : { driver: 'fs', base: './.data/bottles' },
+    },
+    devStorage: {
       bottles: { driver: 'fs', base: './.data/bottles' },
     },
     prerender: {
