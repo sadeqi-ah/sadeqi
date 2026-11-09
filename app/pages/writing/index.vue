@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { HugeiconsIcon } from '@hugeicons/vue'
+import { Search01Icon } from '@hugeicons/core-free-icons'
 import { onKeyStroke } from '@vueuse/core'
 
 const { data: posts } = await useAsyncData('posts', () =>
@@ -52,12 +54,12 @@ useSeoMeta({ title: 'Writing — Amir Hossein Sadeghi', description: 'Notes from
       title="Writing"
       lede="Notes from learning networking, building tools, and doing research. Mostly technical, occasionally personal. RSS available."
     >
-      <label class="search">
-        <img src="/svg/search.svg" alt="" width="16" height="16">
+      <label v-if="posts?.length" class="search">
+        <HugeiconsIcon :icon="Search01Icon" :size="16" class="search-icon" aria-hidden="true" />
         <input ref="search" v-model="query" type="search" placeholder="Search posts…" aria-label="Search posts">
         <UiChip label="/" />
       </label>
-      <div class="tags" role="toolbar" aria-label="Filter by tag">
+      <div v-if="posts?.length" class="tags" role="toolbar" aria-label="Filter by tag">
         <UiChip
           v-for="t in tags"
           :key="t"
@@ -94,7 +96,8 @@ useSeoMeta({ title: 'Writing — Amir Hossein Sadeghi', description: 'Notes from
         </TransitionGroup>
       </YearGroup>
     </TransitionGroup>
-    <p v-if="!filtered.length" class="empty">No posts match “{{ query || tag }}”.</p>
+    <p v-if="!posts?.length" class="empty">Nothing published yet. Posts will appear here.</p>
+    <p v-else-if="!filtered.length" class="empty">No posts match “{{ query || tag }}”.</p>
 
     <SiteFooter />
   </main>
@@ -158,4 +161,5 @@ useSeoMeta({ title: 'Writing — Amir Hossein Sadeghi', description: 'Notes from
 .list-leave-to { opacity: 0; }
 
 @media (max-width: 520px) { .page { margin-top: 56px; } }
+.search-icon { flex-shrink: 0; color: var(--muted); }
 </style>

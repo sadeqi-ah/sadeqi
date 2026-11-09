@@ -194,9 +194,6 @@ const vars = {
   min-width: 1ch;
   max-width: 9.5em;
   field-sizing: content;
-}
-@supports (field-sizing: content) {
-  .sig input { width: auto; }
   padding: 0;
   border: 0;
   background: none;
@@ -205,6 +202,9 @@ const vars = {
   outline: none;
   border-bottom: 1px dashed transparent;
   transition: border-color 0.2s;
+}
+@supports (field-sizing: content) {
+  .sig input { width: auto; }
 }
 .sig input:focus { border-bottom-color: rgba(42, 38, 34, 0.3); }
 .sig input::placeholder { color: #b3a89c; }

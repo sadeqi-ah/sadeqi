@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { HugeiconsIcon } from '@hugeicons/vue'
+import { GithubIcon, InstagramIcon, Mail01Icon, NewTwitterIcon, TelegramIcon } from '@hugeicons/core-free-icons'
+
 type Key = 'email' | 'github' | 'x' | 'telegram' | 'instagram'
 
 const props = withDefaults(defineProps<{ order?: Key[] }>(), {
@@ -15,12 +18,20 @@ const labels: Record<Key, string> = {
   instagram: 'Instagram',
 }
 
+const icons = {
+  email: Mail01Icon,
+  github: GithubIcon,
+  x: NewTwitterIcon,
+  telegram: TelegramIcon,
+  instagram: InstagramIcon,
+} satisfies Record<Key, unknown>
+
 const items = computed(() =>
   props.order.map(key => ({
     key,
     label: labels[key],
     href: site.value?.socials[key] ?? '#',
-    icon: `/svg/${key}.svg`,
+    icon: icons[key],
   })),
 )
 </script>
@@ -38,7 +49,7 @@ const items = computed(() =>
       :target="item.href.startsWith('http') ? '_blank' : undefined"
       rel="noopener"
     >
-      <img :src="item.icon" alt="" width="18" height="18">
+      <HugeiconsIcon :icon="item.icon" :size="18" class="glyph" aria-hidden="true" />
     </a>
   </div>
 </template>
@@ -57,8 +68,8 @@ const items = computed(() =>
     border-color 0.2s var(--ease-out),
     background 0.2s var(--ease-out);
 }
-.social img { transition: transform 0.35s var(--ease-spring); }
+.social .glyph { transition: transform 0.35s var(--ease-spring); }
 .social:hover { border-color: var(--border-strong); background: var(--surface); transform: translateY(-2px); }
-.social:hover img { transform: scale(1.08) rotate(-6deg); }
+.social:hover .glyph { transform: scale(1.08) rotate(-6deg); }
 .social:active { transform: translateY(0) scale(0.94); }
 </style>

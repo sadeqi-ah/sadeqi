@@ -1,0 +1,11 @@
+title: RTL Anywhere
+short: Right-align Persian & Arabic text on any site
+description: A userscript that right-aligns Persian, Arabic, Hebrew and mixed-direction text on any website without flipping the page. One shortcut, optional auto-detect, per-site rules and a choice of Persian fonts. No tracking, works with Tampermonkey and Violentmonkey.
+year: "2026"
+category: web
+stack: [TypeScript, JavaScript, Userscript]
+logo: /projects/rtl-anywhere.png
+order: 3
+links:
+  - label: GitHub ↗
+    href: https://github.com/sadeqi-ah/rtl-anywhere

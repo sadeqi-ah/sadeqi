@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { PlaylistTrack } from '~~/server/api/playlist.get'
+import { HugeiconsIcon } from '@hugeicons/vue'
+import { Location01Icon, PencilEdit01Icon } from '@hugeicons/core-free-icons'
 
 const { data: site } = await useSite()
 
@@ -21,8 +23,6 @@ useSeoMeta({
   description: 'Software developer moving into networking. Research on consensus in low-power wireless and ad-hoc networks.',
 })
 
-const resumeTo = '/resume'
-
 // Tracks come straight from the Spotify playlist linked in media.yml.
 const { data: playlist } = await useFetch('/api/playlist')
 // Favourite films & series, with posters looked up server-side.
@@ -43,7 +43,7 @@ const HOME_FILMS = 4
             From <em class="serif"><PixelText text="pixels" /></em> to <PacketsText text="packets" />.
           </h1>
           <p class="location">
-            <img src="/svg/pin.svg" alt="" width="14" height="14">
+            <HugeiconsIcon :icon="Location01Icon" :size="15" aria-hidden="true" />
             <span>{{ site?.location }}</span>
             <LocalClock v-if="site" :timezone="site.timezone" />
           </p>
@@ -61,7 +61,7 @@ const HOME_FILMS = 4
       <div class="actions" style="--i: 3">
         <SocialLinks />
         <span class="spacer" />
-        <UiButton label="Resume" icon="↗" :to="resumeTo" />
+        <UiButton label="Leave a note" :icon="PencilEdit01Icon" to="/guestbook" />
       </div>
     </section>
 
@@ -89,7 +89,7 @@ const HOME_FILMS = 4
     </section>
 
     <!-- Research -->
-    <section class="section">
+    <section v-if="data?.papers?.length" class="section">
       <SectionLabel label="Research" action="View all →" to="/research" />
       <div v-reveal class="list">
         <LazyResearchItem
@@ -106,7 +106,7 @@ const HOME_FILMS = 4
     </section>
 
     <!-- Writing -->
-    <section class="section">
+    <section v-if="data?.posts?.length" class="section">
       <SectionLabel label="Writing" action="View all →" to="/writing" />
       <div v-reveal class="list">
         <LazyListRow

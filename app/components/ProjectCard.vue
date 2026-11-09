@@ -1,24 +1,23 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   title: string
   year: string
   description: string
   stack: string[]
   links: { label: string, href?: string }[]
   thumbnail?: string
+  logo?: string
 }>()
+
+const monogram = computed(() => props.title.split(/[\s-]+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase())
 </script>
 
 <template>
   <article class="card">
     <div class="thumb">
       <img v-if="thumbnail" :src="thumbnail" :alt="`${title} screenshot`" class="shot" loading="lazy">
-      <div v-else class="topology" aria-hidden="true">
-        <img src="/svg/topology.svg" alt="" width="300" height="160">
-        <!-- A packet hopping across the topology on hover -->
-        <span class="packet" />
-        <span class="packet late" />
-      </div>
+      <img v-else-if="logo" :src="logo" alt="" class="mark" width="112" height="112">
+      <span v-else class="mark mono" aria-hidden="true">{{ monogram }}</span>
     </div>
     <div class="head">
       <h2 class="title">{{ title }}</h2>
@@ -50,36 +49,23 @@ defineProps<{
 .card:hover .thumb { box-shadow: 0 18px 40px -20px var(--shadow); border-color: var(--border-strong); }
 .shot { width: 100%; height: 100%; object-fit: cover; transition: transform 0.9s var(--ease-out); }
 .card:hover .shot { transform: scale(1.03); }
-.topology {
-  position: relative;
-  width: 300px;
-  height: 160px;
+.mark {
+  width: 112px;
+  height: 112px;
+  border-radius: 26px;
+  box-shadow: 0 14px 30px -14px var(--shadow), 0 0 0 1px var(--hairline);
   transition: transform 0.9s var(--ease-out);
 }
-.card:hover .topology { transform: scale(1.04); }
-.packet {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
-  offset-path: path('M40 80 L120 80 L190 30 L260 80 L190 130 L120 80 L40 80');
-  offset-rotate: 0deg;
-  offset-anchor: center;
-  opacity: 0;
-  transition: opacity 0.3s;
-  animation: hop 3.2s var(--ease-in-out) infinite;
-  animation-play-state: paused;
+.mono {
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 44px;
+  color: var(--muted);
 }
-.packet.late { animation-delay: -1.6s; }
-.card:hover .packet { opacity: 1; animation-play-state: running; }
-@keyframes hop {
-  from { offset-distance: 0%; }
-  to { offset-distance: 100%; }
-}
+.card:hover .mark { transform: scale(1.06) rotate(-2deg); }
 .head { display: flex; align-items: center; justify-content: space-between; padding-top: 6px; line-height: normal; }
 .title { font-size: 15px; font-weight: 500; }
 .year { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
@@ -112,6 +98,6 @@ defineProps<{
 
 @media (max-width: 520px) {
   .thumb { height: 220px; }
-  .topology { transform: scale(0.85); }
+  .mark { width: 88px; height: 88px; border-radius: 20px; }
 }
 </style>

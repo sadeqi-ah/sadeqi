@@ -1,0 +1,13 @@
+title: Zeytun
+short: App-aware network control for macOS
+description: Free, open-source macOS app that shows which apps are making which connections and lets you decide how each one is routed — per-app rules, temporary rules, DNS controls and a live traffic monitor, built on a sing-box derived core. Alpha, being hardened toward a stable release.
+year: "2026"
+category: desktop
+stack: [Tauri, Rust, SvelteKit, sing-box]
+logo: /projects/zeytun.png
+order: 1
+links:
+  - label: Website ↗
+    href: https://zeytun-labs.github.io/
+  - label: GitHub ↗
+    href: https://github.com/zeytun-labs/zeytun-app

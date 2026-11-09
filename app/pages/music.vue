@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArrowUpRight01Icon } from '@hugeicons/core-free-icons'
 import type { PlaylistTrack } from '~~/server/api/playlist.get'
 
 // The whole Spotify playlist linked in content/media.yml.
@@ -16,7 +17,7 @@ useSeoMeta({ title: 'Favourite music — Amir Hossein Sadeghi', description: 'So
       lede="Songs on repeat. Tap a row for a 30-second preview — the full songs are on Spotify."
     >
       <div v-if="playlist" class="actions">
-        <UiButton :to="playlist.url" label="Open in Spotify" icon="↗" variant="primary" />
+        <UiButton :to="playlist.url" label="Open in Spotify" :icon="ArrowUpRight01Icon" variant="primary" />
       </div>
     </PageHeader>
 

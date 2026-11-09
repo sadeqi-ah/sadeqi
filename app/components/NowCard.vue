@@ -4,9 +4,9 @@ defineProps<{ items: { title: string, meta: string, progress: number }[] }>()
 
 <template>
   <ul v-reveal class="card">
-    <li v-for="(item, i) in items" :key="item.title" class="item" :style="{ '--i': i, '--target': item.progress }">
+    <li v-for="(item, i) in items" :key="item.title" class="item" data-marquee-host :style="{ '--i': i, '--target': item.progress }">
       <span class="arrow">→</span>
-      <span class="title">{{ item.title }}</span>
+      <MarqueeText class="title" :text="item.title" />
       <span class="meta">{{ item.meta }}</span>
       <span class="spacer" />
       <span class="bar" role="progressbar" :aria-valuenow="item.progress" aria-valuemin="0" aria-valuemax="100" :aria-label="`${item.title} progress`">
@@ -41,8 +41,8 @@ defineProps<{ items: { title: string, meta: string, progress: number }[] }>()
 .item:last-child { border-bottom: 0; }
 .arrow { font-family: var(--font-mono); font-size: 12px; color: var(--accent); animation: nudge 1.8s var(--ease-in-out) infinite; }
 @keyframes nudge { 50% { transform: translateX(3px); } }
-.title { font-size: 15px; white-space: nowrap; }
-.meta { font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.title { font-size: 15px; flex: 0 1 auto; min-width: 0; }
+.meta { font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
 .spacer { flex: 1 0 0; min-width: 0; }
 .bar {
   position: relative;
@@ -82,6 +82,6 @@ defineProps<{ items: { title: string, meta: string, progress: number }[] }>()
 
 @media (max-width: 520px) {
   .meta { display: none; }
-  .title { white-space: normal; font-size: 14px; }
+  .title { font-size: 14px; }
 }
 </style>

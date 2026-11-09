@@ -1,11 +1,10 @@
-# Global site settings — replace the placeholder links with your own.
+# Global site settings.
 name: Amir Hossein Sadeghi
-location: Paris, France
-timezone: Europe/Paris
-resumePdf: ""   # e.g. /amir-resume.pdf (put the file in /public). Empty = print dialog.
+location: Tehran, Iran
+timezone: Asia/Tehran
 socials:
-  email: mailto:you@domain.com
-  github: https://github.com/username
-  x: https://x.com/username
-  telegram: https://t.me/username
-  instagram: https://instagram.com/username
+  email: mailto:sadeghi.ah79@gmail.com
+  github: https://github.com/sadeqi-ah
+  x: https://x.com/eysaaad
+  telegram: https://t.me/sadeqi_ah
+  instagram: https://instagram.com/sadeqi_ah

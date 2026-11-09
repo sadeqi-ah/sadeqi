@@ -1,11 +1,12 @@
 updated: Nov 2026
 items:
-  - title: Consensus protocol simulations
-    meta: research · python
-    progress: 70
-  - title: VLAN + OSPF homelab
-    meta: lab
-    progress: 40
-  - title: This website
-    meta: nuxt
-    progress: 20
+  - title: Zeytun — updates, maintenance, road to stable
+    meta: open source · tauri · rust
+    progress: 45
+    active: true
+  - title: Low-power networks paper
+    meta: research · in preparation
+    progress: 98
+  - title: Blockchain on low-power networks
+    meta: research · early stage
+    progress: 10

@@ -3,8 +3,9 @@ const { data: projects } = await useAsyncData('projects', () =>
   queryCollection('projects').order('order', 'ASC').all(),
 )
 
-const filters = ['all', 'network', 'desktop', 'web', 'labs'] as const
-const active = ref<(typeof filters)[number]>('all')
+// Only offer categories that have at least one project.
+const filters = computed(() => ['all', ...new Set((projects.value ?? []).map(p => p.category))])
+const active = ref('all')
 const visible = computed(() =>
   (projects.value ?? []).filter(p => active.value === 'all' || p.category === active.value),
 )
@@ -19,7 +20,7 @@ useSeoMeta({ title: 'Projects — Amir Hossein Sadeghi', description: 'Network t
       title="Things I built"
       lede="Network tools, desktop apps and labs. Most of it is open source — click through for write-ups, diagrams and the problems I hit along the way."
     >
-      <div class="filters" role="toolbar" aria-label="Filter projects">
+      <div v-if="filters.length > 2" class="filters" role="toolbar" aria-label="Filter projects">
         <UiChip
           v-for="f in filters"
           :key="f"
@@ -43,6 +44,7 @@ useSeoMeta({ title: 'Projects — Amir Hossein Sadeghi', description: 'Network t
         :stack="p.stack"
         :links="p.links"
         :thumbnail="p.thumbnail"
+        :logo="p.logo"
       />
     </TransitionGroup>
     <p v-if="!visible.length" class="empty">Nothing here yet — check back soon.</p>

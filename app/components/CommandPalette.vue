@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { HugeiconsIcon } from '@hugeicons/vue'
+import { Search01Icon } from '@hugeicons/core-free-icons'
 import { onKeyStroke } from '@vueuse/core'
 
 interface Item { label: string, hint: string, to: string, group: string, run?: () => void }
@@ -16,7 +18,6 @@ const pages: Item[] = [
   { label: 'Projects', hint: '~/projects', to: '/projects', group: 'pages' },
   { label: 'Research', hint: '~/research', to: '/research', group: 'pages' },
   { label: 'Writing', hint: '~/writing', to: '/writing', group: 'pages' },
-  { label: 'Resume', hint: '~/resume', to: '/resume', group: 'pages' },
   { label: 'Favourite music', hint: '~/music', to: '/music', group: 'pages' },
   { label: 'Films & series', hint: '~/films', to: '/films', group: 'pages' },
   { label: 'Guestbook — message in a bottle', hint: '~/guestbook', to: '/guestbook', group: 'pages' },
@@ -90,7 +91,7 @@ function onKey(e: KeyboardEvent) {
       <div v-if="open" class="overlay" @mousedown.self="open = false">
         <div class="panel" role="dialog" aria-modal="true" aria-label="Command menu">
           <div class="search">
-            <img src="/svg/search.svg" alt="" width="16" height="16">
+            <HugeiconsIcon :icon="Search01Icon" :size="16" class="search-icon" aria-hidden="true" />
             <input
               ref="input"
               v-model="query"
@@ -201,4 +202,5 @@ function onKey(e: KeyboardEvent) {
 .palette-enter-from, .palette-leave-to { opacity: 0; }
 .palette-enter-from .panel { transform: translateY(-8px) scale(0.97); opacity: 0; }
 .palette-leave-to .panel { transform: scale(0.98); opacity: 0; }
+.search-icon { flex-shrink: 0; color: var(--muted); }
 </style>

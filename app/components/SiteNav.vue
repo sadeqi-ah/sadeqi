@@ -14,10 +14,18 @@ const links = [
   { to: '/projects', label: 'projects' },
   { to: '/research', label: 'research' },
   { to: '/writing', label: 'writing' },
-  { to: '/resume', label: 'resume' },
 ]
 
 const nav = ref<HTMLElement>()
+
+// Show the shortcut for the visitor's OS (⌘ on Apple devices, ctrl elsewhere).
+// Decided after mount so prerendered HTML and hydration agree.
+const shortcut = ref<string | null>(null)
+onMounted(() => {
+  const n = navigator as Navigator & { userAgentData?: { platform?: string } }
+  const platform = n.userAgentData?.platform ?? navigator.platform ?? ''
+  shortcut.value = /mac|iphone|ipad|ipod/i.test(platform) ? '⌘ k' : 'ctrl k'
+})
 
 const activeTo = computed(() => links.find(l => l.to === '/' ? route.path === '/' : route.path.startsWith(l.to))?.to ?? null)
 const hovered = ref<string | null>(null)
@@ -93,8 +101,11 @@ const blobStyle = computed(() => ({
       >
         {{ link.label }}
       </NuxtLink>
-      <button class="kbd" type="button" aria-label="Open command menu" @click="palette = true">
-        ctrl k
+      <span class="link disabled" aria-disabled="true" title="Coming soon">cv</span>
+    </nav>
+    <div class="tools">
+      <button class="kbd" :class="{ ready: shortcut }" type="button" aria-label="Open command menu" @click="palette = true">
+        {{ shortcut ?? 'ctrl k' }}
       </button>
       <button
         class="theme"
@@ -116,7 +127,7 @@ const blobStyle = computed(() => ({
           </g>
         </svg>
       </button>
-    </nav>
+    </div>
   </div>
 </template>
 
@@ -126,14 +137,20 @@ const blobStyle = computed(() => ({
   height: 40px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+}
+.tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: nav-in 0.7s var(--ease-out) both;
 }
 .nav {
   position: relative;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 4px;
+  padding: 4px 0;
   border-radius: 999px;
   will-change: transform;
   animation: nav-in 0.7s var(--ease-out) both;
@@ -162,6 +179,7 @@ const blobStyle = computed(() => ({
 }
 .link.active,
 .link.router-link-active:not([data-to="/"]) { color: var(--text); }
+.link.disabled { opacity: 0.4; cursor: not-allowed; user-select: none; }
 .kbd {
   position: relative;
   padding: 3px 8px;
@@ -170,11 +188,11 @@ const blobStyle = computed(() => ({
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--muted);
-  transition: color 0.2s, background 0.2s;
+  transition: color 0.2s, background 0.2s, opacity 0.25s;
 }
 .kbd:hover { color: var(--text); background: var(--border); }
-/* breathing room between the links and the tools */
-.kbd { margin-left: 14px; }
+.kbd { opacity: 0; }
+.kbd.ready { opacity: 1; }
 
 .theme {
   position: relative;
@@ -182,7 +200,6 @@ const blobStyle = computed(() => ({
   place-items: center;
   width: 28px;
   height: 28px;
-  margin-left: 4px;
   border-radius: 999px;
   color: var(--muted);
   transition: color 0.2s, background 0.2s, transform 0.3s var(--ease-spring);
@@ -205,7 +222,6 @@ const blobStyle = computed(() => ({
 
 @media (max-width: 420px) {
   .kbd { display: none; }
-  .theme { margin-left: 2px; }
   .link { padding: 5px 8px; font-size: 13px; }
 }
 </style>

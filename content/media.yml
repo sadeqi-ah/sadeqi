@@ -2,20 +2,287 @@
 playlist: https://open.spotify.com/playlist/5learNOVof5yQtIV1AgT07
 
 # Favourite films & series. Posters are found by title automatically; add
-# `year:` if a film title is ambiguous, or `cover:` (an image URL) to override.
-# TODO: these four are examples — replace them with your own favourites.
+# `year:` if a title is ambiguous, or `cover:` (an image URL) to override.
+# For series, `year` is the first air year and `note` is shown under the title.
+# The home page shows the first few entries, so keep the best ones on top.
 favourites:
-  - title: Interstellar
+  - title: "Ozark"
+    kind: series
+    note: "2017"
+    year: 2017
+  - title: "Pluribus"
+    kind: series
+    note: "2025"
+    year: 2025
+  - title: "Arcane"
+    kind: series
+    note: "2021"
+    year: 2021
+  - title: "MobLand"
+    kind: series
+    note: "2025"
+    year: 2025
+  - title: "Interstellar"
     kind: film
     note: "2014"
     year: 2014
-  - title: Breaking Bad
-    kind: series
-    note: S1–S5
-  - title: Dark
-    kind: series
-    note: S1–S3
-  - title: The Godfather
+  - title: "The Prestige"
     kind: film
-    note: "1972"
-    year: 1972
+    note: "2006"
+    year: 2006
+  - title: "Inception"
+    kind: film
+    note: "2010"
+    year: 2010
+  - title: "The Silence of the Lambs"
+    kind: film
+    note: "1991"
+    year: 1991
+  - title: "Shutter Island"
+    kind: film
+    note: "2010"
+    year: 2010
+  - title: "Oppenheimer"
+    kind: film
+    note: "2023"
+    year: 2023
+  - title: "Kingdom of Heaven"
+    kind: film
+    note: "2005"
+    year: 2005
+  - title: "Léon: The Professional"
+    kind: film
+    note: "1994"
+    year: 1994
+  - title: "Spirited Away"
+    kind: film
+    note: "2001"
+    year: 2001
+  - title: "Drive"
+    kind: film
+    note: "2011"
+    year: 2011
+  - title: "Blade Runner 2049"
+    kind: film
+    note: "2017"
+    year: 2017
+  - title: "Batman Begins"
+    kind: film
+    note: "2005"
+    year: 2005
+  - title: "The Dark Knight"
+    kind: film
+    note: "2008"
+    year: 2008
+  - title: "The Dark Knight Rises"
+    kind: film
+    note: "2012"
+    year: 2012
+  - title: "The Lord of the Rings: The Fellowship of the Ring"
+    kind: film
+    note: "2001"
+    year: 2001
+  - title: "The Lord of the Rings: The Two Towers"
+    kind: film
+    note: "2002"
+    year: 2002
+  - title: "The Lord of the Rings: The Return of the King"
+    kind: film
+    note: "2003"
+    year: 2003
+  - title: "Harry Potter and the Sorcerer's Stone"
+    kind: film
+    note: "2001"
+    year: 2001
+  - title: "Harry Potter and the Chamber of Secrets"
+    kind: film
+    note: "2002"
+    year: 2002
+  - title: "Harry Potter and the Prisoner of Azkaban"
+    kind: film
+    note: "2004"
+    year: 2004
+  - title: "Harry Potter and the Goblet of Fire"
+    kind: film
+    note: "2005"
+    year: 2005
+  - title: "Harry Potter and the Order of the Phoenix"
+    kind: film
+    note: "2007"
+    year: 2007
+  - title: "Harry Potter and the Half-Blood Prince"
+    kind: film
+    note: "2009"
+    year: 2009
+  - title: "Harry Potter and the Deathly Hallows: Part 1"
+    kind: film
+    note: "2010"
+    year: 2010
+  - title: "Harry Potter and the Deathly Hallows: Part 2"
+    kind: film
+    note: "2011"
+    year: 2011
+  - title: "The Hunger Games"
+    kind: film
+    note: "2012"
+    year: 2012
+  - title: "The Hunger Games: Catching Fire"
+    kind: film
+    note: "2013"
+    year: 2013
+  - title: "The Hunger Games: Mockingjay - Part 1"
+    kind: film
+    note: "2014"
+    year: 2014
+  - title: "The Hunger Games: Mockingjay - Part 2"
+    kind: film
+    note: "2015"
+    year: 2015
+  - title: "John Wick"
+    kind: film
+    note: "2014"
+    year: 2014
+  - title: "John Wick: Chapter 2"
+    kind: film
+    note: "2017"
+    year: 2017
+  - title: "John Wick: Chapter 3 - Parabellum"
+    kind: film
+    note: "2019"
+    year: 2019
+  - title: "John Wick: Chapter 4"
+    kind: film
+    note: "2023"
+    year: 2023
+  - title: "From the World of John Wick: Ballerina"
+    kind: film
+    note: "2025"
+    year: 2025
+  - title: "Friends"
+    kind: series
+    note: "1994"
+    year: 1994
+  - title: "Chernobyl"
+    kind: series
+    note: "2019"
+    year: 2019
+  - title: "The Continental"
+    kind: series
+    note: "2023"
+    year: 2023
+  - title: "Griselda"
+    kind: series
+    note: "2024"
+    year: 2024
+  - title: "The Last Kingdom"
+    kind: series
+    note: "2015"
+    year: 2015
+  - title: "Mr. Robot"
+    kind: series
+    note: "2015"
+    year: 2015
+  - title: "See"
+    kind: series
+    note: "2019"
+    year: 2019
+  - title: "Chief of War"
+    kind: series
+    note: "2025"
+    year: 2025
+  - title: "Cape Fear"
+    kind: series
+    note: "2025"
+    year: 2025
+  - title: "Taboo"
+    kind: series
+    note: "2017"
+    year: 2017
+  - title: "The Penguin"
+    kind: series
+    note: "2024"
+    year: 2024
+  - title: "Better Call Saul"
+    kind: series
+    note: "2015"
+    year: 2015
+  - title: "Peaky Blinders"
+    kind: series
+    note: "2013"
+    year: 2013
+  - title: "Love & Death"
+    kind: series
+    note: "2023"
+    year: 2023
+  - title: "Dark"
+    kind: series
+    note: "2017"
+    year: 2017
+  - title: "Vikings"
+    kind: series
+    note: "2013"
+    year: 2013
+  - title: "You"
+    kind: series
+    note: "2018"
+    year: 2018
+  - title: "The Walking Dead"
+    kind: series
+    note: "2010"
+    year: 2010
+  - title: "Game of Thrones"
+    kind: series
+    note: "2011"
+    year: 2011
+  - title: "Sharp Objects"
+    kind: series
+    note: "2018"
+    year: 2018
+  - title: "Unbelievable"
+    kind: series
+    note: "2019"
+    year: 2019
+  - title: "The Queen's Gambit"
+    kind: series
+    note: "2020"
+    year: 2020
+  - title: "House of the Dragon"
+    kind: series
+    note: "2022"
+    year: 2022
+  - title: "Presumed Innocent"
+    kind: series
+    note: "2024"
+    year: 2024
+  - title: "The Last of Us"
+    kind: series
+    note: "2023"
+    year: 2023
+  - title: "Fallout"
+    kind: series
+    note: "2024"
+    year: 2024
+  - title: "One Piece"
+    kind: series
+    note: "2023"
+    year: 2023
+  - title: "Dark Matter"
+    kind: series
+    note: "2024"
+    year: 2024
+  - title: "Hijack"
+    kind: series
+    note: "2023"
+    year: 2023
+  - title: "Dept. Q"
+    kind: series
+    note: "2025"
+    year: 2025
+  - title: "Silo"
+    kind: series
+    note: "2023"
+    year: 2023
+  - title: "True Detective"
+    kind: series
+    note: "2014"
+    year: 2014

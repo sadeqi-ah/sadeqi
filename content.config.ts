@@ -58,14 +58,6 @@ export default defineContentConfig({
     }),
 
     // Single-file data collections
-    researchNotes: defineCollection({
-      type: 'data',
-      source: 'research/notes.yml',
-      schema: z.object({
-        items: z.array(z.object({ title: z.string(), href: z.string().optional() })),
-      }),
-    }),
-
     now: defineCollection({
       type: 'data',
       source: 'now.yml',
@@ -109,7 +101,6 @@ export default defineContentConfig({
         name: z.string(),
         location: z.string(),
         timezone: z.string(),
-        resumePdf: z.string().optional(),
         socials: z.object({
           email: z.string(),
           github: z.string(),
@@ -120,30 +111,5 @@ export default defineContentConfig({
       }),
     }),
 
-    resume: defineCollection({
-      type: 'data',
-      source: 'resume.yml',
-      schema: z.object({
-        name: z.string(),
-        role: z.string(),
-        avatar: z.string().optional(),
-        contact: z.array(link),
-        summary: z.object({ network: z.string(), fullstack: z.string() }),
-        experience: z.array(z.object({
-          role: z.string(),
-          org: z.string(),
-          period: z.string(),
-          tracks: z.array(z.enum(['network', 'fullstack'])),
-          bullets: z.array(z.string()),
-        })),
-        education: z.array(z.object({ degree: z.string(), school: z.string(), period: z.string() })),
-        skills: z.array(z.object({
-          group: z.string(),
-          tracks: z.array(z.enum(['network', 'fullstack'])),
-          items: z.array(z.string()),
-        })),
-        languages: z.array(z.object({ name: z.string(), level: z.string() })),
-      }),
-    }),
   },
 })

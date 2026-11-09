@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { NuxtLink } from '#components'
+import { HugeiconsIcon } from '@hugeicons/vue'
+import type { IconSvgElement } from '@hugeicons/vue'
+
 defineProps<{
   label: string
-  icon?: string
+  /** a Hugeicons icon object, e.g. ArrowUpRight01Icon */
+  icon?: IconSvgElement
   variant?: 'primary' | 'secondary'
   to?: string
 }>()
@@ -18,7 +22,7 @@ defineProps<{
     :class="variant ?? 'secondary'"
   >
     <span class="label">{{ label }}</span>
-    <span v-if="icon" class="icon" aria-hidden="true">{{ icon }}</span>
+    <HugeiconsIcon v-if="icon" :icon="icon" :size="16" class="icon" aria-hidden="true" />
   </component>
 </template>
 
