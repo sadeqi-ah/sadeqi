@@ -44,7 +44,7 @@ onKeyStroke('/', (e) => {
   search.value?.focus()
 })
 
-useSeoMeta({ title: 'Writing — Amir Hossein Sadeghi', description: 'Notes from learning networking, building tools, and doing research.' })
+useSeoMeta({ title: 'Writing — AmirHossein Sadeghi', description: 'Notes from learning networking, building tools, and doing research.' })
 </script>
 
 <template>

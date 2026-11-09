@@ -8,8 +8,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "build:cf": "NITRO_PRESET=cloudflare_pages nuxt build",
-    "deploy": "pnpm build:cf && wrangler pages deploy dist"
+    "build:cf": "rm -rf dist && NITRO_PRESET=cloudflare_pages nuxt build",
+    "ship": "pnpm build:cf && wrangler pages deploy dist"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.4.0",

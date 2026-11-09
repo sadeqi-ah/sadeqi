@@ -242,7 +242,8 @@ function wake() {
 onMounted(async () => {
   document.documentElement.classList.add('sea-mode')
   touch.value = matchMedia('(pointer: coarse)').matches
-  night.value = document.documentElement.classList.contains('dark')
+  // the sea has its own day/night (the sun/moon button), always starting at
+  // day, whatever the site theme is
   synth.setMuted(!sound.value)
   window.addEventListener('keydown', onKey)
   window.addEventListener('pointerdown', wake, { once: true })

@@ -18,8 +18,8 @@ const { data } = await useAsyncData('home', async () => {
 })
 
 useSeoMeta({
-  title: 'Amir Hossein Sadeghi — from pixels to packets',
-  ogTitle: 'Amir Hossein Sadeghi',
+  title: 'AmirHossein Sadeghi — from pixels to packets',
+  ogTitle: 'AmirHossein Sadeghi',
   description: 'Software developer moving into networking. Research on consensus in low-power wireless and ad-hoc networks.',
 })
 

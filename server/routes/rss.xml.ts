@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>Amir Hossein Sadeghi — Writing</title>
+    <title>AmirHossein Sadeghi — Writing</title>
     <link>${origin}/writing</link>
     <description>Notes from learning networking, building tools, and doing research.</description>
     <language>en</language>${items}

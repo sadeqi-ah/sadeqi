@@ -137,7 +137,7 @@ const vars = {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 20px 50px -18px rgba(20, 30, 40, 0.45);
   outline: none;
 }
-:global(html.dark) .paper { filter: brightness(0.86); }
+:global(.game.night) .paper { filter: brightness(0.86); }
 .date {
   position: absolute;
   top: var(--pad);

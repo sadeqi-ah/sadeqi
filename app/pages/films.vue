@@ -12,7 +12,7 @@ const count = (k: (typeof filters)[number]) =>
 const chipLabel = (k: (typeof filters)[number]) =>
   `${k === 'all' ? 'all' : k === 'film' ? 'films' : 'series'} · ${count(k)}`
 
-useSeoMeta({ title: 'Favourite films & series — Amir Hossein Sadeghi', description: 'Films and series I keep coming back to.' })
+useSeoMeta({ title: 'Favourite films & series — AmirHossein Sadeghi', description: 'Films and series I keep coming back to.' })
 </script>
 
 <template>

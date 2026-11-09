@@ -1,9 +1,10 @@
 title: NotchNotch
-short: A notch hub for macOS
-description: A native macOS notch hub for music, calendar events and live activities. Spotify and Apple Music controls, upcoming meetings with a countdown, and an extension SDK so integrations can be written in React and TypeScript. Developer preview.
+short: An extensible notch platform for macOS
+description: A native macOS notch platform built around an extension SDK. Write live activities in React and TypeScript with native components, prompts, storage and local app connections, and run them from the notch. Music (Spotify, Apple Music) and calendar with a meeting countdown ship as extensions on the same SDK. Developer preview.
 year: "2026"
 category: desktop
 stack: [Swift, SwiftUI, AppKit, React, TypeScript]
+logo: /projects/notchnotch.png
 order: 2
 links:
   - label: GitHub ↗

@@ -32,7 +32,7 @@ onMounted(() => {
 onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
 
 useSeoMeta({
-  title: `${post.value.title} — Amir Hossein Sadeghi`,
+  title: `${post.value.title} — AmirHossein Sadeghi`,
   description: post.value.description,
   ogTitle: post.value.title,
   ogDescription: post.value.description,

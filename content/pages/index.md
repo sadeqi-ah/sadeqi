@@ -1,5 +1,5 @@
 ---
-title: Amir Hossein Sadeghi
+title: AmirHossein Sadeghi
 tagline: From pixels to packets.
 ---
 

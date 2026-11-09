@@ -35,7 +35,7 @@ export default defineNuxtConfig({
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       htmlAttrs: { lang: 'en' },
-      title: 'Amir Hossein Sadeghi',
+      title: 'AmirHossein Sadeghi',
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'From pixels to packets — networking, research and the things I build.' },
@@ -48,7 +48,7 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        { rel: 'alternate', type: 'application/rss+xml', title: 'Writing — Amir Hossein Sadeghi', href: '/rss.xml' },
+        { rel: 'alternate', type: 'application/rss+xml', title: 'Writing — AmirHossein Sadeghi', href: '/rss.xml' },
       ],
     },
   },

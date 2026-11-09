@@ -4,6 +4,9 @@ items:
     meta: open source · tauri · rust
     progress: 45
     active: true
+  - title: NotchNotch — updates, maintenance
+    meta: open source · swift · macOS
+    progress: 30
   - title: Low-power networks paper
     meta: research · in preparation
     progress: 98

@@ -6,7 +6,7 @@ import type { PlaylistTrack } from '~~/server/api/playlist.get'
 const { data: playlist } = await useFetch('/api/playlist')
 const playing = ref<PlaylistTrack | null>(null)
 
-useSeoMeta({ title: 'Favourite music — Amir Hossein Sadeghi', description: 'Songs on repeat.' })
+useSeoMeta({ title: 'Favourite music — AmirHossein Sadeghi', description: 'Songs on repeat.' })
 </script>
 
 <template>

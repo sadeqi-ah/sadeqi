@@ -10,7 +10,7 @@ const visible = computed(() =>
   (projects.value ?? []).filter(p => active.value === 'all' || p.category === active.value),
 )
 
-useSeoMeta({ title: 'Projects — Amir Hossein Sadeghi', description: 'Network tools, desktop apps and labs.' })
+useSeoMeta({ title: 'Projects — AmirHossein Sadeghi', description: 'Network tools, desktop apps and labs.' })
 </script>
 
 <template>

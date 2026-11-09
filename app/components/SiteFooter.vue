@@ -7,7 +7,7 @@
       <SocialLinks :order="['instagram', 'telegram', 'x', 'email', 'github']" />
     </div>
     <div class="meta">
-      <p>© {{ new Date().getFullYear() }} Amir Hossein Sadeghi</p>
+      <p>© {{ new Date().getFullYear() }} AmirHossein Sadeghi</p>
       <span class="links">
         <NuxtLink to="/guestbook" class="rss">leave a note</NuxtLink>
         <a href="/rss.xml" class="rss">rss</a>

@@ -6,7 +6,7 @@ const { data: papers } = await useAsyncData('research', () =>
 const years = computed(() => groupByYear(papers.value ?? [], p => p.year))
 const interests = ['low-power wireless', 'distributed systems', 'blockchain']
 
-useSeoMeta({ title: 'Research — Amir Hossein Sadeghi', description: 'Research on low-power wireless networks.' })
+useSeoMeta({ title: 'Research — AmirHossein Sadeghi', description: 'Research on low-power wireless networks.' })
 </script>
 
 <template>
